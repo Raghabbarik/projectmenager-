@@ -325,7 +325,7 @@ export const ProjectsPage: React.FC = () => {
             className="px-2.5 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
           >
             <option value="all">All Clients</option>
-            {clients.map((c) => (
+            {(isMember ? visibleClients : clients).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.company}
               </option>

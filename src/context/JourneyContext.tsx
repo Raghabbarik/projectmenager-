@@ -169,7 +169,7 @@ interface JourneyContextType {
   updateNote: (id: string, data: Partial<Note>) => void;
   deleteNote: (id: string) => void;
 
-  addFile: (file: Omit<FileAttachment, 'id' | 'uploadedAt'>) => FileAttachment;
+  addFile: (file: Omit<FileAttachment, 'uploadedAt'> & { id?: string }) => FileAttachment;
   deleteFile: (id: string) => void;
 
   markNotificationRead: (id: string) => void;
@@ -479,16 +479,20 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     supabaseService.getSession().then(({ data }) => {
       if (data?.session?.user) {
         const u = data.session.user;
+        const matchedDbMember = teamMembers.find(
+          (m) => m.email.toLowerCase() === (u.email || '').toLowerCase()
+        );
         const resolvedRole: UserRole =
           (u.user_metadata?.role as UserRole) ||
-          (u.email?.includes('admin') ? 'admin' : 'member');
+          matchedDbMember?.role ||
+          (u.email?.toLowerCase() === 'rraghabbarik@gmail.com' ? 'admin' : (u.email?.includes('admin') ? 'admin' : 'member'));
 
         setUser((prev) => ({
           ...prev,
           email: u.email || prev.email,
           name: u.user_metadata?.name || u.email?.split('@')[0]?.replace(/[._-]/g, ' ') || prev.name,
           role: resolvedRole,
-          title: resolvedRole === 'admin' ? 'Administrator' : 'Client Project Specialist',
+          title: resolvedRole === 'admin' ? 'Administrator' : (matchedDbMember?.title || 'Client Project Specialist'),
           onboarded: true,
         }));
 
@@ -518,16 +522,20 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const { data: authSub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const u = session.user;
+        const matchedDbMember = teamMembers.find(
+          (m) => m.email.toLowerCase() === (u.email || '').toLowerCase()
+        );
         const resolvedRole: UserRole =
           (u.user_metadata?.role as UserRole) ||
-          (u.email?.includes('admin') ? 'admin' : 'member');
+          matchedDbMember?.role ||
+          (u.email?.toLowerCase() === 'rraghabbarik@gmail.com' ? 'admin' : (u.email?.includes('admin') ? 'admin' : 'member'));
 
         setUser((prev) => ({
           ...prev,
           email: u.email || prev.email,
           name: u.user_metadata?.name || u.email?.split('@')[0]?.replace(/[._-]/g, ' ') || prev.name,
           role: resolvedRole,
-          title: resolvedRole === 'admin' ? 'Administrator' : 'Client Project Specialist',
+          title: resolvedRole === 'admin' ? 'Administrator' : (matchedDbMember?.title || 'Client Project Specialist'),
           onboarded: true,
         }));
         syncWithSupabase();
@@ -554,6 +562,14 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
       .on('postgres_changes', { event: '*', schema: 'public', table: 'activities' }, async () => {
         const acts = await supabaseService.fetchActivities();
         if (acts) setActivities(acts);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, async () => {
+        const ts = await supabaseService.fetchTasks();
+        if (ts) setTasks(ts);
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, async () => {
+        const tm = await supabaseService.fetchTeamMembers();
+        if (tm && tm.length > 0) setTeamMembers(tm);
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') setSupabaseConnected(true);
@@ -1169,10 +1185,11 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   // File Operations
-  const addFile = (data: Omit<FileAttachment, 'id' | 'uploadedAt'>): FileAttachment => {
+  const addFile = (data: Omit<FileAttachment, 'uploadedAt'> & { id?: string }): FileAttachment => {
     const newFile: FileAttachment = {
       ...data,
-      id: `file-${Date.now()}`,
+      // Use caller-supplied id (so it matches the IndexedDB blob key) or generate a fallback
+      id: data.id || `file-${Date.now()}`,
       uploadedAt: new Date().toISOString(),
     };
     setFiles((prev) => [newFile, ...prev]);
@@ -1231,8 +1248,17 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const isMember = userRole === 'member';
 
   const currentMember = teamMembers.find(
-    (m) => m.email.toLowerCase() === user.email.toLowerCase()
-  );
+    (m) => user.email && m.email.toLowerCase() === user.email.toLowerCase()
+  ) || (isMember && user.email ? {
+    id: `member-${user.email}`,
+    name: user.name || user.email.split('@')[0],
+    email: user.email,
+    role: 'member' as const,
+    title: user.title || 'Client Project Specialist',
+    assignedClientIds: [],
+    assignedProjectIds: [],
+    createdAt: new Date().toISOString(),
+  } : undefined);
 
   const isSelfProject = (p: Project) => {
     return !p.clientId || p.clientId === 'self';
@@ -1240,7 +1266,8 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const visibleClients = clients.filter((c) => {
     if (!isMember) return true; // Admins see all clients
-    // Member can ALWAYS see clients they created / submitted
+
+    // 1. Member can ALWAYS see clients they created / submitted (even if pending approval)
     if (
       c.createdBy &&
       (c.createdBy.toLowerCase() === user.email.toLowerCase() ||
@@ -1248,26 +1275,36 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     ) {
       return true;
     }
-    if (!currentMember) return false;
-    // Check directly assigned clients
-    if (currentMember.assignedClientIds && currentMember.assignedClientIds.includes(c.id)) {
+
+    // 2. Check directly assigned clients
+    if (currentMember?.assignedClientIds && currentMember.assignedClientIds.includes(c.id)) {
       return true;
     }
-    // Check clients of assigned projects
-    if (currentMember.assignedProjectIds && currentMember.assignedProjectIds.length > 0) {
+
+    // 3. Check clients of assigned projects
+    if (currentMember?.assignedProjectIds && currentMember.assignedProjectIds.length > 0) {
       const hasAssignedProjectForClient = projects.some(
         (p) => currentMember.assignedProjectIds!.includes(p.id) && p.clientId === c.id
       );
       if (hasAssignedProjectForClient) return true;
     }
+
+    // 4. If the member has NO explicit restricted client assignments configured
+    // (i.e. general workspace access), they see all approved/active clients added in the workspace
+    const hasRestrictedClientList = Boolean(
+      currentMember?.assignedClientIds && currentMember.assignedClientIds.length > 0
+    );
+    if (!hasRestrictedClientList) {
+      return c.approvalStatus === 'approved' || !c.approvalStatus;
+    }
+
     return false;
   });
 
   const visibleProjects = projects.filter((p) => {
     if (!isMember) return true; // Admins see all projects
-    // Members NEVER see private self projects without client
-    if (!p.clientId || p.clientId === 'self') return false;
-    // Member can ALWAYS see projects they created / submitted
+
+    // 1. Member can ALWAYS see projects they created / submitted (even if pending or without client)
     if (
       p.createdBy &&
       (p.createdBy.toLowerCase() === user.email.toLowerCase() ||
@@ -1275,20 +1312,42 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     ) {
       return true;
     }
-    if (!currentMember) return false;
 
-    const hasAssignedProjects = currentMember.assignedProjectIds && currentMember.assignedProjectIds.length > 0;
-    const hasAssignedClients = currentMember.assignedClientIds && currentMember.assignedClientIds.length > 0;
+    // 2. Check directly assigned projects
+    if (currentMember?.assignedProjectIds && currentMember.assignedProjectIds.includes(p.id)) {
+      return true;
+    }
 
-    if (hasAssignedProjects && hasAssignedClients) {
-      return currentMember.assignedProjectIds!.includes(p.id) || currentMember.assignedClientIds!.includes(p.clientId);
+    // 3. Check projects associated with assigned clients
+    if (
+      currentMember?.assignedClientIds &&
+      p.clientId &&
+      currentMember.assignedClientIds.includes(p.clientId)
+    ) {
+      return true;
     }
-    if (hasAssignedProjects) {
-      return currentMember.assignedProjectIds!.includes(p.id);
+
+    // 4. If the member has NO explicit restricted project assignments configured:
+    const hasRestrictedProjects = Boolean(
+      currentMember?.assignedProjectIds && currentMember.assignedProjectIds.length > 0
+    );
+    const hasRestrictedClients = Boolean(
+      currentMember?.assignedClientIds && currentMember.assignedClientIds.length > 0
+    );
+
+    if (!hasRestrictedProjects && !hasRestrictedClients) {
+      // General workspace access: member sees all approved projects
+      return p.approvalStatus === 'approved' || !p.approvalStatus;
     }
-    if (hasAssignedClients) {
-      return currentMember.assignedClientIds!.includes(p.clientId);
+
+    // 5. If this project belongs to any client currently visible to the member:
+    if (p.clientId && p.clientId !== 'self') {
+      const isClientVisible = visibleClients.some((c) => c.id === p.clientId);
+      if (isClientVisible && (p.approvalStatus === 'approved' || !p.approvalStatus)) {
+        return true;
+      }
     }
+
     return false;
   });
 
@@ -1676,7 +1735,8 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
             navigateTo('dashboard');
           }
         } else {
-          // Supabase login failed — try local team member password as fallback
+          // Supabase login failed — try local team member password as fallback.
+          // This also handles "Email not confirmed" errors so members can still sign in.
           const matchedMember = teamMembers.find(
             (m) => m.email.toLowerCase() === cleanEmail
           );
@@ -1696,13 +1756,18 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 ? `Welcome Admin: ${matchedMember.name}`
                 : `Signed in as Member: ${matchedMember.name}`
             );
+            syncWithSupabase();
             if (matchedMember.role === 'member') {
               navigateTo('projects');
             } else {
               navigateTo('dashboard');
             }
           } else {
-            const errMsg = (authError as any)?.message || 'Invalid email or password';
+            // Show a user-friendly message instead of raw Supabase errors
+            const rawMsg: string = (authError as any)?.message || '';
+            const errMsg = rawMsg.toLowerCase().includes('email not confirmed')
+              ? 'Sign in failed. Please ask your admin to verify your account.'
+              : rawMsg || 'Invalid email or password';
             showToast(errMsg, 'warning');
           }
         }

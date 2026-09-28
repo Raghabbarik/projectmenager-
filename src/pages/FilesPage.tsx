@@ -48,8 +48,9 @@ export const FilesPage: React.FC = () => {
       // 2. Persist real File/PDF Blob in client IndexedDB storage
       await saveFileBlob(fileId, f);
 
-      // 3. Add file metadata to JourneyContext
+      // 3. Add file metadata to JourneyContext — pass the same fileId used for IndexedDB blob
       addFile({
+        id: fileId,
         name: f.name,
         type: f.type || 'application/octet-stream',
         size: displaySize,
