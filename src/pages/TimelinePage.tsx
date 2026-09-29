@@ -26,6 +26,7 @@ import {
   Check,
 } from 'lucide-react';
 import { Milestone, MilestoneCategory, MilestoneStatus } from '../types';
+import { GooeyNav } from '../components/common/GooeyNav';
 
 interface TimelinePageProps {
   defaultStream?: 'projects' | 'personal';
@@ -309,38 +310,25 @@ export const TimelinePage: React.FC<TimelinePageProps> = ({ defaultStream = 'pro
 
       {/* PRIMARY DUAL TIMELINE SELECTOR */}
       <div className="p-1.5 rounded-2xl bg-neutral-800/50 dark:bg-neutral-800/50 border border-neutral-700/60 dark:border-neutral-700/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-xs">
-        <div className="flex items-center gap-1.5 flex-1">
-          {/* Timeline 1: Projects & Client Timeline */}
-          <button
-            onClick={() => setActiveTimelineStream('projects')}
-            className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-              activeTimelineStream === 'projects'
-                ? 'bg-neutral-900 text-indigo-400 shadow-sm border border-neutral-700'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            <Building2 className="w-4 h-4" />
-            <span>Projects & Client Timeline</span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-400 font-bold">
-              {totalProjectMilestones}
-            </span>
-          </button>
-
-          {/* Timeline 2: Personal Timeline */}
-          <button
-            onClick={() => setActiveTimelineStream('personal')}
-            className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-              activeTimelineStream === 'personal'
-                ? 'bg-neutral-900 text-emerald-400 shadow-sm border border-neutral-700'
-                : 'text-neutral-400 hover:text-white'
-            }`}
-          >
-            <User className="w-4 h-4" />
-            <span>My Personal Timeline</span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 font-bold">
-              {totalPersonalMilestones}
-            </span>
-          </button>
+        <div className="flex items-center gap-1.5 flex-1 overflow-x-auto">
+          <GooeyNav
+            items={[
+              {
+                label: `Projects & Clients (${totalProjectMilestones})`,
+                id: 'projects',
+                icon: <Building2 className="w-3.5 h-3.5" />,
+              },
+              {
+                label: `My Personal Timeline (${totalPersonalMilestones})`,
+                id: 'personal',
+                icon: <User className="w-3.5 h-3.5" />,
+              },
+            ]}
+            activeIndex={activeTimelineStream === 'projects' ? 0 : 1}
+            onChange={(item) => {
+              if (item.id) setActiveTimelineStream(item.id as 'projects' | 'personal');
+            }}
+          />
         </div>
 
         {/* Global Search Input */}

@@ -11,6 +11,7 @@ import {
   X,
   ArrowRight,
 } from 'lucide-react';
+import { GooeyNav } from '../common/GooeyNav';
 
 export const PublicHeader: React.FC = () => {
   const { currentRoute, navigateTo, user, settings, updateSettings } = useJourney();
@@ -57,8 +58,8 @@ export const PublicHeader: React.FC = () => {
     <header
       className={`sticky top-0 z-50 w-full transition-all duration-300 ${
         isScrolled
-          ? 'backdrop-blur-xl bg-white/90 dark:bg-neutral-950/90 shadow-md shadow-neutral-900/5 dark:shadow-black/20 border-b border-neutral-200/90 dark:border-neutral-800'
-          : 'backdrop-blur-md bg-white/80 dark:bg-neutral-950/80 border-b border-neutral-200/60 dark:border-neutral-800/60'
+          ? 'backdrop-blur-md bg-transparent/20 border-b border-neutral-200/10 dark:border-neutral-800/20 shadow-xs'
+          : 'bg-transparent border-b border-transparent'
       }`}
     >
       {/* Dynamic Scroll Progress Bar */}
@@ -87,25 +88,20 @@ export const PublicHeader: React.FC = () => {
           </div>
         </div>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1">
-          {navLinks.map((item) => {
-            const isActive = currentRoute === item.route;
-            return (
-              <button
-                key={item.route}
-                onClick={() => navigateTo(item.route)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                  isActive
-                    ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/70 dark:bg-indigo-950/50 font-semibold'
-                    : 'text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-900'
-                }`}
-              >
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
+        {/* Desktop Gooey Navigation Links */}
+        <div className="hidden md:flex items-center">
+          <GooeyNav
+            items={[
+              { label: 'Home', id: 'home', href: '#' },
+              { label: 'About', id: 'about', href: '#' },
+              { label: 'Contact', id: 'contact', href: '#' },
+            ]}
+            activeIndex={Math.max(0, ['home', 'about', 'contact'].indexOf(currentRoute as string))}
+            onChange={(item) => {
+              if (item.id) navigateTo(item.id as 'home' | 'about' | 'contact');
+            }}
+          />
+        </div>
 
         {/* Right Actions: Theme Toggle & Login/Dashboard Button */}
         <div className="hidden md:flex items-center gap-2.5">
@@ -135,10 +131,10 @@ export const PublicHeader: React.FC = () => {
           ) : (
             <button
               onClick={() => navigateTo('login')}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-neutral-900 text-white dark:bg-[#e5e5cb] dark:text-[#1a120b] hover:bg-neutral-800 dark:hover:bg-[#d5cea3] shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In</span>
+              <LogIn className="w-3.5 h-3.5 text-white dark:text-[#1a120b]" />
+              <span className="text-white dark:text-[#1a120b]">Sign In</span>
             </button>
           )}
         </div>
