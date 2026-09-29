@@ -291,7 +291,7 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
 
                 <button
                   onClick={handleStartCreate}
-                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs cursor-pointer shrink-0"
+                  className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-neutral-900 text-white dark:bg-[#e5e5cb] dark:text-[#1a120b] hover:bg-neutral-800 dark:hover:bg-[#d5cea3] transition-colors shadow-xs cursor-pointer shrink-0"
                 >
                   <UserPlus className="w-3.5 h-3.5 stroke-[2.2]" />
                   <span>+ Allocate New Member</span>
@@ -370,7 +370,7 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
                         <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => handleQuickLoginAsMember(member)}
-                            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors cursor-pointer flex items-center gap-1"
+                            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-800 dark:text-[#e5e5cb] hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors cursor-pointer flex items-center gap-1"
                             title="Test logging in as this member"
                           >
                             <span>Test Login</span>
@@ -382,7 +382,7 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
                               setMessageRecipient(member.email);
                               setMessageModalOpen(true);
                             }}
-                            className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/40 cursor-pointer"
+                            className="p-1.5 text-indigo-600 dark:text-[#d5cea3] hover:text-indigo-800 dark:hover:text-white rounded-lg hover:bg-indigo-50 dark:hover:bg-neutral-800 cursor-pointer"
                             title={`Send direct message to ${member.name}`}
                           >
                             <Mail className="w-3.5 h-3.5" />
@@ -392,7 +392,7 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
                             <>
                               <button
                                 onClick={() => handleStartEdit(member)}
-                                className="p-1.5 text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
+                                className="p-1.5 text-neutral-600 dark:text-[#e5e5cb] hover:text-neutral-900 dark:hover:text-white rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
                                 title="Edit allocations & credentials"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -400,7 +400,7 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
 
                               <button
                                 onClick={() => deleteTeamMember(member.id)}
-                                className="p-1.5 text-rose-500 hover:text-rose-700 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                                className="p-1.5 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 rounded-lg hover:bg-rose-50 dark:hover:bg-neutral-800 cursor-pointer"
                                 title="Delete member"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -659,14 +659,14 @@ export const MemberManagementModal: React.FC<MemberManagementModalProps> = ({
                     setViewMode('list');
                     resetForm();
                   }}
-                  className="px-4 py-2 text-xs font-medium rounded-lg text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold rounded-lg text-neutral-700 dark:text-[#e5e5cb] hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
 
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs cursor-pointer"
+                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-neutral-900 text-white dark:bg-[#e5e5cb] dark:text-[#1a120b] hover:bg-neutral-800 dark:hover:bg-[#d5cea3] transition-colors shadow-xs cursor-pointer"
                 >
                   <Check className="w-3.5 h-3.5" />
                   <span>{editingMemberId ? 'Save Allocations' : 'Create & Allocate Member'}</span>

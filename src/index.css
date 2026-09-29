@@ -124,7 +124,15 @@
   }
 
   .text-white {
-    color: #ffffff !important;
+    color: #ffffff;
+  }
+
+  /* Ensure buttons with light background in dark mode have dark, readable text */
+  html.dark .dark\:text-neutral-900,
+  :root.dark .dark\:text-neutral-900,
+  html.dark .dark\:text-\[\#1a120b\],
+  :root.dark .dark\:text-\[\#1a120b\] {
+    color: #1a120b !important;
   }
 
   ::selection {

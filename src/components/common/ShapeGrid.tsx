@@ -20,6 +20,8 @@ export interface ShapeGridProps {
   hoverTrailAmount?: number;
   vignetteColor?: string;
   className?: string;
+  lineWidth?: number;
+  ambientLighting?: boolean;
 }
 
 export const ShapeGrid: React.FC<ShapeGridProps> = ({
@@ -32,6 +34,8 @@ export const ShapeGrid: React.FC<ShapeGridProps> = ({
   hoverTrailAmount = 0,
   vignetteColor,
   className = '',
+  lineWidth = 1.25,
+  ambientLighting = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number | null>(null);
@@ -101,6 +105,26 @@ export const ShapeGrid: React.FC<ShapeGridProps> = ({
       if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      if (ambientLighting) {
+        // High-illumination ambient lighting spotlight for light mode
+        const ambientGrad = ctx.createRadialGradient(
+          canvas.width * 0.5,
+          canvas.height * 0.22,
+          10,
+          canvas.width * 0.5,
+          canvas.height * 0.35,
+          Math.max(canvas.width, canvas.height) * 0.85
+        );
+        ambientGrad.addColorStop(0, 'rgba(255, 255, 255, 0.7)');
+        ambientGrad.addColorStop(0.35, 'rgba(240, 247, 238, 0.45)');
+        ambientGrad.addColorStop(0.7, 'rgba(228, 239, 231, 0.2)');
+        ambientGrad.addColorStop(1, 'rgba(250, 241, 230, 0)');
+        ctx.fillStyle = ambientGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      ctx.lineWidth = lineWidth;
+
       if (isHex) {
         const colShift = Math.floor(gridOffset.current.x / hexHoriz);
         const offsetX = ((gridOffset.current.x % hexHoriz) + hexHoriz) % hexHoriz;
@@ -117,11 +141,14 @@ export const ShapeGrid: React.FC<ShapeGridProps> = ({
             const cellKey = `${col},${row}`;
             const alpha = cellOpacities.current.get(cellKey);
             if (alpha) {
+              ctx.save();
               ctx.globalAlpha = alpha;
-              drawHex(cx, cy, squareSize);
               ctx.fillStyle = hoverFillColor;
+              ctx.shadowColor = typeof hoverFillColor === 'string' ? hoverFillColor : 'rgba(153, 188, 133, 0.6)';
+              ctx.shadowBlur = 10;
+              drawHex(cx, cy, squareSize);
               ctx.fill();
-              ctx.globalAlpha = 1;
+              ctx.restore();
             }
 
             drawHex(cx, cy, squareSize);
@@ -451,7 +478,7 @@ export const ShapeGrid: React.FC<ShapeGridProps> = ({
       window.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseleave', handleMouseLeave);
     };
-  }, [direction, speed, borderColor, hoverFillColor, squareSize, shape, hoverTrailAmount, vignetteColor]);
+  }, [direction, speed, borderColor, hoverFillColor, squareSize, shape, hoverTrailAmount, vignetteColor, lineWidth, ambientLighting]);
 
   return <canvas ref={canvasRef} className={`w-full h-full border-none block ${className}`} />;
 };
@@ -482,17 +509,18 @@ export const BackgroundShapeGrid: React.FC<{
 
   // ColorHunt light palette (#faf1e6, #fdfaf6, #e4efe7, #99bc85)
   // ColorHunt dark palette (#1a120b, #3c2a21, #d5cea3, #e5e5cb)
+  // Radiant, high-clarity lighting in light mode:
   const borderColor = isDark
-    ? 'rgba(213, 206, 163, 0.12)'
-    : 'rgba(153, 188, 133, 0.22)';
+    ? 'rgba(213, 206, 163, 0.16)'
+    : 'rgba(120, 168, 100, 0.52)';
 
   const hoverFillColor = isDark
-    ? 'rgba(213, 206, 163, 0.22)'
-    : 'rgba(153, 188, 133, 0.32)';
+    ? 'rgba(213, 206, 163, 0.25)'
+    : 'rgba(153, 188, 133, 0.58)';
 
   const vignetteColor = isDark
     ? 'rgba(26, 18, 11, 0.88)'
-    : 'rgba(250, 241, 230, 0.82)';
+    : 'rgba(250, 241, 230, 0.16)';
 
   return (
     <div
@@ -508,6 +536,8 @@ export const BackgroundShapeGrid: React.FC<{
         borderColor={borderColor}
         hoverFillColor={hoverFillColor}
         vignetteColor={vignetteColor}
+        lineWidth={isDark ? 1.0 : 1.35}
+        ambientLighting={!isDark}
       />
     </div>
   );

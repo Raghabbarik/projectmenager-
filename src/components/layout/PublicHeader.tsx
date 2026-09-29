@@ -201,7 +201,7 @@ export const PublicHeader: React.FC = () => {
                   navigateTo('login');
                   setMobileMenuOpen(false);
                 }}
-                className="w-full py-2.5 rounded-xl text-xs font-semibold bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 rounded-xl text-xs font-semibold bg-neutral-900 dark:bg-[#e5e5cb] text-white dark:text-[#1a120b] flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
                 <span>Sign In</span>

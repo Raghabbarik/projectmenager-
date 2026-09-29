@@ -288,7 +288,7 @@ export const DashboardPage: React.FC = () => {
 
           <button
             onClick={() => openActivityModal({ date: todayStr })}
-            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 rounded-lg transition-colors shadow-xs cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-neutral-900 hover:bg-neutral-800 dark:bg-[#e5e5cb] dark:text-[#1a120b] dark:hover:bg-[#d5cea3] rounded-lg transition-colors shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Add Activity</span>

@@ -72,7 +72,7 @@ export const AdminMembersPage: React.FC = () => {
 
           <button
             onClick={() => setMemberModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-500/20 transition-all cursor-pointer shrink-0"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-violet-600 dark:bg-[#e5e5cb] hover:bg-violet-700 dark:hover:bg-[#d5cea3] text-white dark:text-[#1a120b] shadow-md shadow-violet-500/20 transition-all cursor-pointer shrink-0"
           >
             <UserPlus className="w-4 h-4" />
             <span>+ Add New Member</span>
@@ -144,7 +144,7 @@ export const AdminMembersPage: React.FC = () => {
             {!searchQuery && roleFilter === 'all' && (
               <button
                 onClick={() => setMemberModalOpen(true)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white shadow-md shadow-violet-500/20 transition-all cursor-pointer"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold bg-violet-600 dark:bg-[#e5e5cb] hover:bg-violet-700 dark:hover:bg-[#d5cea3] text-white dark:text-[#1a120b] shadow-md shadow-violet-500/20 transition-all cursor-pointer"
               >
                 <UserPlus className="w-4 h-4" />
                 <span>Add First Member</span>
@@ -252,7 +252,7 @@ export const AdminMembersPage: React.FC = () => {
                   <div className="flex items-center gap-2 pt-2 border-t border-neutral-100 dark:border-neutral-800">
                     <button
                       onClick={() => setMemberModalOpen(true)}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 transition-colors cursor-pointer"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-[#e5e5cb] transition-colors cursor-pointer"
                     >
                       <Edit2 className="w-3 h-3" />
                       <span>Edit</span>
@@ -263,7 +263,7 @@ export const AdminMembersPage: React.FC = () => {
                         setMessageRecipient(m.email);
                         setMessageModalOpen(true);
                       }}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-medium border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400 transition-colors cursor-pointer"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-[11px] font-semibold bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-800 dark:text-[#e5e5cb] transition-colors cursor-pointer"
                     >
                       <Mail className="w-3 h-3" />
                       <span>Message</span>
@@ -280,7 +280,7 @@ export const AdminMembersPage: React.FC = () => {
                             onConfirm: () => deleteTeamMember(m.id),
                           })
                         }
-                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-neutral-200 dark:border-neutral-700 hover:border-rose-200 dark:hover:border-rose-800 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-rose-500 dark:text-rose-400 border border-neutral-200 dark:border-neutral-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:border-rose-200 dark:hover:border-rose-800 transition-colors cursor-pointer"
                         title="Remove member"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

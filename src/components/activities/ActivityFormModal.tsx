@@ -755,7 +755,7 @@ export const ActivityFormModal: React.FC = () => {
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-xs font-semibold rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs cursor-pointer"
+              className="px-5 py-2 text-xs font-semibold rounded-lg bg-neutral-900 text-white dark:bg-[#e5e5cb] dark:text-[#1a120b] hover:bg-neutral-800 dark:hover:bg-[#d5cea3] transition-colors shadow-xs cursor-pointer"
             >
               {activityModal.editId ? 'Save Changes' : 'Record Activity & Time'}
             </button>

@@ -85,7 +85,7 @@ const AppContent: React.FC = () => {
   // 1. Public Marketing / Landing Pages (Home, About, Contact)
   if (currentRoute === 'home') {
     return (
-      <div className="relative min-h-screen flex flex-col bg-neutral-50/70 dark:bg-neutral-950/70 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
+      <div className="relative min-h-screen flex flex-col bg-transparent dark:bg-neutral-950/60 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
         <BackgroundShapeGrid />
         <PublicHeader />
         <main className="flex-1 relative z-10">
@@ -102,7 +102,7 @@ const AppContent: React.FC = () => {
 
   if (currentRoute === 'about') {
     return (
-      <div className="relative min-h-screen flex flex-col bg-neutral-50/70 dark:bg-neutral-950/70 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
+      <div className="relative min-h-screen flex flex-col bg-transparent dark:bg-neutral-950/60 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
         <BackgroundShapeGrid />
         <PublicHeader />
         <main className="flex-1 relative z-10">
@@ -119,7 +119,7 @@ const AppContent: React.FC = () => {
 
   if (currentRoute === 'contact') {
     return (
-      <div className="relative min-h-screen flex flex-col bg-neutral-50/70 dark:bg-neutral-950/70 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
+      <div className="relative min-h-screen flex flex-col bg-transparent dark:bg-neutral-950/60 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
         <BackgroundShapeGrid />
         <PublicHeader />
         <main className="flex-1 relative z-10">
@@ -189,7 +189,7 @@ const AppContent: React.FC = () => {
   const isAuthUser = Boolean(user && user.email && user.onboarded && !user.email.toLowerCase().includes('alex.mercer'));
   if (!isAuthUser) {
     return (
-      <div className="relative min-h-screen flex flex-col bg-neutral-50/70 dark:bg-neutral-950/70 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
+      <div className="relative min-h-screen flex flex-col bg-transparent dark:bg-neutral-950/60 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
         <BackgroundShapeGrid />
         <PublicHeader />
         <main className="flex-1 relative z-10">
@@ -254,8 +254,7 @@ const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="relative flex h-screen w-screen overflow-hidden bg-neutral-50/70 dark:bg-neutral-950/70 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
-      <BackgroundShapeGrid />
+    <div className="relative flex h-screen w-screen overflow-hidden bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
       {/* Desktop Sidebar */}
       <Sidebar />
 

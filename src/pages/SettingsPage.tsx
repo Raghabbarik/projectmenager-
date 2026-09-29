@@ -89,7 +89,7 @@ export const SettingsPage: React.FC = () => {
 
             <button
               onClick={() => setMemberModalOpen(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer self-start sm:self-auto"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 dark:bg-[#e5e5cb] hover:bg-indigo-700 dark:hover:bg-[#d5cea3] text-white dark:text-[#1a120b] transition-colors shadow-xs cursor-pointer self-start sm:self-auto"
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>+ Allocate New Member</span>
@@ -228,7 +228,7 @@ export const SettingsPage: React.FC = () => {
 
             <button
               onClick={() => openPublicEditor('home')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-xs cursor-pointer self-start sm:self-auto"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 dark:bg-[#e5e5cb] hover:bg-indigo-700 dark:hover:bg-[#d5cea3] text-white dark:text-[#1a120b] transition-colors shadow-xs cursor-pointer self-start sm:self-auto"
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Launch Public CMS Editor</span>
@@ -384,7 +384,7 @@ export const SettingsPage: React.FC = () => {
 
           <button
             type="submit"
-            className="px-4 py-2 text-xs font-semibold rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-colors shadow-xs"
+            className="px-4 py-2 text-xs font-semibold rounded-lg bg-neutral-900 text-white dark:bg-[#e5e5cb] dark:text-[#1a120b] hover:bg-neutral-800 dark:hover:bg-[#d5cea3] transition-colors shadow-xs cursor-pointer"
           >
             Save Profile
           </button>
@@ -547,7 +547,7 @@ export const SettingsPage: React.FC = () => {
           </div>
           <button
             onClick={() => resetToSampleData()}
-            className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:bg-neutral-800 transition-colors shadow-xs"
+            className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-neutral-900 text-white dark:bg-[#e5e5cb] dark:text-[#1a120b] hover:bg-neutral-800 dark:hover:bg-[#d5cea3] transition-colors shadow-xs cursor-pointer"
           >
             Restore Seed Data
           </button>
