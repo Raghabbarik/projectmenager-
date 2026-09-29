@@ -22,6 +22,8 @@ import {
   AlertCircle,
   HelpCircle,
   ArrowRight,
+  User,
+  Trash2,
 } from 'lucide-react';
 import { ActivityCard, formatDuration } from '../components/activities/ActivityCard';
 import { EmptyState } from '../components/common/EmptyState';
@@ -33,6 +35,7 @@ export const DailyPage: React.FC = () => {
     projects,
     toggleTaskComplete,
     addTask,
+    deleteTask,
     toggleActivityComplete,
     completedDays,
     toggleDayComplete,
@@ -526,49 +529,103 @@ export const DailyPage: React.FC = () => {
 
           {/* Quick inline task addition */}
           {isAddingTask && (
-            <form onSubmit={handleCreateTask} className="p-3.5 rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-3 animate-in fade-in duration-100">
-              <div className="text-xs font-semibold text-neutral-900 dark:text-neutral-100">
-                Add Task for {currentDate}
+            <form onSubmit={handleCreateTask} className="p-4 sm:p-5 rounded-2xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/40 dark:bg-indigo-950/20 space-y-4 animate-in fade-in duration-100">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-neutral-900 dark:text-neutral-100">
+                  Add Particular Task for {currentDate}
+                </span>
+                <span className="text-[11px] text-neutral-500 font-medium">
+                  Connecting to a project is optional
+                </span>
               </div>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+
+              {/* Task Title Input */}
+              <div>
+                <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                  Task Title *
+                </label>
                 <input
                   type="text"
-                  placeholder="Task title (e.g., Deliver design spec, review PR...)"
+                  placeholder="e.g. Exercise (30m), Drink 2L water, Review pull request, Learn Redis..."
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
-                  className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs"
                   autoFocus
+                  required
                 />
-                <select
-                  value={targetProjectId}
-                  onChange={(e) => setTargetProjectId(e.target.value)}
-                  className="px-2.5 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              </div>
+
+              {/* Project Connection (Optional) + Priority in responsive grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {/* Project Connection (Optional) */}
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1 flex items-center justify-between">
+                    <span>Connect Project (Optional)</span>
+                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-normal">
+                      {targetProjectId === 'personal' || !targetProjectId ? 'Personal (No Project)' : 'Connected'}
+                    </span>
+                  </label>
+                  <select
+                    value={targetProjectId}
+                    onChange={(e) => setTargetProjectId(e.target.value)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs cursor-pointer"
+                  >
+                    <option value="personal">👤 Personal Task (No Project)</option>
+                    {projects.length > 0 && (
+                      <optgroup label="Attach to Project (Optional)">
+                        {projects.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            📁 {p.name} {p.clientId ? '(Client Project)' : '(Self Project)'}
+                          </option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </select>
+                  <p className="text-[10px] text-neutral-500 mt-1">
+                    {targetProjectId === 'personal' || !targetProjectId
+                      ? '✓ Purely personal task. Kept strictly on your daily journey and will never appear on client project boards.'
+                      : '🔗 This task will be attached to the selected project deliverables board.'}
+                  </p>
+                </div>
+
+                {/* Priority */}
+                <div>
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
+                    Priority Level
+                  </label>
+                  <select
+                    value={newTaskPriority}
+                    onChange={(e) => setNewTaskPriority(e.target.value as PriorityLevel)}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs cursor-pointer"
+                  >
+                    <option value="high">🔴 High Priority</option>
+                    <option value="medium">🟡 Medium Priority</option>
+                    <option value="low">🔵 Low Priority</option>
+                  </select>
+                  <p className="text-[10px] text-neutral-500 mt-1">
+                    Prioritize your key commitments for this day.
+                  </p>
+                </div>
+              </div>
+
+              {/* Form Buttons */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-indigo-150 dark:border-indigo-900/40">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingTask(false);
+                    setNewTaskTitle('');
+                    setTargetProjectId('personal');
+                  }}
+                  className="px-3.5 py-1.5 text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-200 cursor-pointer font-medium"
                 >
-                  <option value="personal">👤 Personal Daily Task / Habit</option>
-                  {projects.length > 0 && (
-                    <optgroup label="Attach to Project">
-                      {projects.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} {p.clientId ? '(Client Project)' : '(Self Project)'}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
-                <select
-                  value={newTaskPriority}
-                  onChange={(e) => setNewTaskPriority(e.target.value as PriorityLevel)}
-                  className="px-2.5 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option value="high">High Priority</option>
-                  <option value="medium">Medium Priority</option>
-                  <option value="low">Low Priority</option>
-                </select>
+                  Cancel
+                </button>
                 <button
                   type="submit"
-                  className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors cursor-pointer"
                 >
-                  Save Task
+                  Save Particular Task
                 </button>
               </div>
             </form>
@@ -683,12 +740,18 @@ export const DailyPage: React.FC = () => {
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap text-[11px] mb-0.5">
-                          {proj && (
-                            <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                              {proj.name}
+                          {proj && task.projectId !== 'personal' && !task.isPersonal ? (
+                            <span className="inline-flex items-center gap-1 font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 px-2 py-0.5 rounded text-[10px] border border-indigo-200/60 dark:border-indigo-800/60">
+                              <FolderGit2 className="w-2.5 h-2.5" />
+                              <span>{proj.name}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded text-[10px] border border-amber-200/60 dark:border-amber-800/60">
+                              <User className="w-2.5 h-2.5" />
+                              <span>Personal Task</span>
                             </span>
                           )}
-                          <span className="text-neutral-400">·</span>
+                          <span className="text-neutral-300 dark:text-neutral-700">·</span>
                           <span
                             className={`capitalize text-[10px] font-semibold px-1.5 py-0.2 rounded ${
                               task.priority === 'high'
@@ -717,8 +780,8 @@ export const DailyPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Direct Complete Action Button */}
-                    <div className="ml-3 shrink-0">
+                    {/* Direct Actions: Complete Button & Delete */}
+                    <div className="ml-3 shrink-0 flex items-center gap-1.5">
                       <button
                         onClick={() => toggleTaskComplete(task.id)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer border ${
@@ -739,6 +802,15 @@ export const DailyPage: React.FC = () => {
                             <span>Complete Task</span>
                           </>
                         )}
+                      </button>
+
+                      <button
+                        onClick={() => deleteTask(task.id)}
+                        className="p-1.5 text-neutral-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                        title="Delete task"
+                        aria-label="Delete task"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
