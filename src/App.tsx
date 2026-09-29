@@ -23,6 +23,7 @@ import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { PublicSiteEditorModal } from './components/admin/PublicSiteEditorModal';
 import { MilestoneModal } from './components/modals/MilestoneModal';
+import { ScrollToTop } from './components/common/ScrollToTop';
 
 // Workspace App Pages
 import { DashboardPage } from './pages/DashboardPage';
@@ -87,6 +88,7 @@ const AppContent: React.FC = () => {
           <HomePage />
         </main>
         <PublicFooter />
+        <ScrollToTop />
         <PublicSiteEditorModal />
         <MilestoneModal />
         <ToastContainer />
@@ -102,6 +104,7 @@ const AppContent: React.FC = () => {
           <AboutPage />
         </main>
         <PublicFooter />
+        <ScrollToTop />
         <PublicSiteEditorModal />
         <MilestoneModal />
         <ToastContainer />
@@ -117,6 +120,7 @@ const AppContent: React.FC = () => {
           <ContactPage />
         </main>
         <PublicFooter />
+        <ScrollToTop />
         <PublicSiteEditorModal />
         <MilestoneModal />
         <ToastContainer />

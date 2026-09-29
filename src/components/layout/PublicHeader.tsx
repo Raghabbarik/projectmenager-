@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, useScroll, useSpring } from 'motion/react';
 import { useJourney } from '../../context/JourneyContext';
 import {
   Compass,
@@ -14,6 +15,20 @@ import {
 export const PublicHeader: React.FC = () => {
   const { currentRoute, navigateTo, user, settings, updateSettings } = useJourney();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const { scrollYProgress, scrollY } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 120,
+    damping: 24,
+    restDelta: 0.001,
+  });
+
+  useEffect(() => {
+    return scrollY.on('change', (latest) => {
+      setIsScrolled(latest > 20);
+    });
+  }, [scrollY]);
 
   const isLoggedIn = Boolean(user && user.email && user.onboarded);
 
@@ -34,7 +49,18 @@ export const PublicHeader: React.FC = () => {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-white/85 dark:bg-neutral-950/85 border-b border-neutral-200/80 dark:border-neutral-800/80 transition-colors">
+    <header
+      className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+        isScrolled
+          ? 'backdrop-blur-xl bg-white/90 dark:bg-neutral-950/90 shadow-md shadow-neutral-900/5 dark:shadow-black/20 border-b border-neutral-200/90 dark:border-neutral-800'
+          : 'backdrop-blur-md bg-white/80 dark:bg-neutral-950/80 border-b border-neutral-200/60 dark:border-neutral-800/60'
+      }`}
+    >
+      {/* Dynamic Scroll Progress Bar */}
+      <motion.div
+        className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-400 origin-left z-50 shadow-[0_0_10px_rgba(99,102,241,0.6)]"
+        style={{ scaleX }}
+      />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand Logo */}
         <div

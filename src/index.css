@@ -9,6 +9,10 @@
     color-scheme: light;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   html.dark, :root.dark {
     color-scheme: dark;
     background-color: #0a0a0a;
