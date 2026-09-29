@@ -168,14 +168,22 @@ const AppContent: React.FC = () => {
   }
 
   // 3. Workspace Application Route Guard
-  // Unauthenticated users trying to access workspace pages must sign in first
-  const isAuthUser = Boolean(user && user.email && user.onboarded);
+  // Unauthenticated users trying to access workspace pages must NOT see a bare login screen;
+  // they see the Public Home Page with the "Sign In" button in the header.
+  const isAuthUser = Boolean(user && user.email && user.onboarded && !user.email.toLowerCase().includes('alex.mercer'));
   if (!isAuthUser) {
     return (
-      <>
-        <LoginPage />
+      <div className="min-h-screen flex flex-col bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 antialiased font-sans">
+        <PublicHeader />
+        <main className="flex-1">
+          <HomePage />
+        </main>
+        <PublicFooter />
+        <ScrollToTop />
+        <PublicSiteEditorModal />
+        <MilestoneModal />
         <ToastContainer />
-      </>
+      </div>
     );
   }
 

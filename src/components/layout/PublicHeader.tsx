@@ -122,14 +122,14 @@ export const PublicHeader: React.FC = () => {
             )}
           </button>
 
-          {/* Login or Dashboard Button */}
+          {/* Login or Workspace Button */}
           {isLoggedIn ? (
             <button
-              onClick={() => navigateTo('dashboard')}
+              onClick={() => navigateTo(user?.role === 'member' ? 'projects' : 'dashboard')}
               className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>Go to Workspace</span>
+              <span>{user?.role === 'member' ? 'Member Workspace' : 'Admin Dashboard'}</span>
               <ArrowRight className="w-3.5 h-3.5 opacity-80" />
             </button>
           ) : (
@@ -138,7 +138,7 @@ export const PublicHeader: React.FC = () => {
               className="px-4 py-2 rounded-xl text-xs font-semibold bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 hover:bg-neutral-800 dark:hover:bg-neutral-100 shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Sign In (Member & Admin)</span>
+              <span>Sign In</span>
             </button>
           )}
         </div>
@@ -191,13 +191,13 @@ export const PublicHeader: React.FC = () => {
             {isLoggedIn ? (
               <button
                 onClick={() => {
-                  navigateTo('dashboard');
+                  navigateTo(user?.role === 'member' ? 'projects' : 'dashboard');
                   setMobileMenuOpen(false);
                 }}
                 className="w-full py-2.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LayoutDashboard className="w-4 h-4" />
-                <span>Go to Workspace</span>
+                <span>{user?.role === 'member' ? 'Member Workspace' : 'Admin Dashboard'}</span>
               </button>
             ) : (
               <button
@@ -208,7 +208,7 @@ export const PublicHeader: React.FC = () => {
                 className="w-full py-2.5 rounded-xl text-xs font-semibold bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <LogIn className="w-4 h-4" />
-                <span>Sign In (Member & Admin)</span>
+                <span>Sign In</span>
               </button>
             )}
           </div>

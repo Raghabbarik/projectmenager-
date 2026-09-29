@@ -33,10 +33,14 @@ export const LoginPage: React.FC = () => {
     }
     setErrorMsg('');
     setIsLoading(true);
-    // loginUser triggers Supabase signIn async; navigation happens after auth state change
-    loginUser(email.trim(), password);
-    // Give it 4s for the async response; loading cleared by navigation or error toast
-    setTimeout(() => setIsLoading(false), 4000);
+    try {
+      const ok = await loginUser(email.trim(), password);
+      if (!ok) {
+        setIsLoading(false);
+      }
+    } catch {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -352,7 +356,7 @@ export const ForgotPasswordPage: React.FC = () => {
 };
 
 export const OnboardingPage: React.FC = () => {
-  const { navigateTo, updateUser, showToast } = useJourney();
+  const { navigateTo, updateUser, showToast, user } = useJourney();
   const [step, setStep] = useState(1);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([
     'Reading',
@@ -381,7 +385,7 @@ export const OnboardingPage: React.FC = () => {
   const handleFinish = () => {
     updateUser({ trackingInterests: selectedInterests, onboarded: true });
     showToast('Your journey is ready');
-    navigateTo('dashboard');
+    navigateTo(user?.role === 'member' ? 'projects' : 'dashboard');
   };
 
   return (

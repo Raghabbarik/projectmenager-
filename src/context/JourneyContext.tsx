@@ -190,7 +190,7 @@ interface JourneyContextType {
   addTeamMember: (member: Omit<TeamMember, 'id' | 'createdAt'>) => TeamMember;
   updateTeamMember: (id: string, data: Partial<TeamMember>) => void;
   deleteTeamMember: (id: string) => void;
-  loginUser: (email: string, password?: string) => boolean;
+  loginUser: (email: string, password?: string) => Promise<boolean> | boolean;
   logoutUser: () => void;
   userRole: UserRole;
   isAdmin: boolean;
@@ -351,11 +351,33 @@ export const cleanPersonalTasks = (rawTasks: Task[]): Task[] => {
 export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRoute, setCurrentRoute] = useState<ViewRoute>(() => {
     const savedUser = loadFromStorage<UserProfile | null>('user', null);
-    const hasAuth = Boolean(savedUser && savedUser.email && !savedUser.email.toLowerCase().includes('alex.mercer'));
-    const savedRoute = loadFromStorage<ViewRoute>('currentRoute', 'home');
-    const publicRoutes: ViewRoute[] = ['home', 'about', 'contact', 'login', 'register', 'forgot-password', 'onboarding'];
-    if (!hasAuth && !publicRoutes.includes(savedRoute)) {
+    const hasAuth = Boolean(
+      savedUser &&
+      savedUser.email &&
+      savedUser.onboarded &&
+      !savedUser.email.toLowerCase().includes('alex.mercer')
+    );
+    if (!hasAuth) {
+      // First-time or unauthenticated visitor: always default to the public home page
       return 'home';
+    }
+    const savedRoute = loadFromStorage<ViewRoute>('currentRoute', 'dashboard');
+    const publicRoutes: ViewRoute[] = ['home', 'about', 'contact', 'login', 'register', 'forgot-password', 'onboarding'];
+    if (publicRoutes.includes(savedRoute)) {
+      return savedUser.role === 'member' ? 'projects' : 'dashboard';
+    }
+    if (savedUser.role === 'member') {
+      const memberAllowed: ViewRoute[] = [
+        'projects',
+        'project-detail',
+        'clients',
+        'client-detail',
+        'messages',
+        'timeline',
+        'personal-timeline',
+        'settings',
+      ];
+      return memberAllowed.includes(savedRoute) ? savedRoute : 'projects';
     }
     return savedRoute;
   });
@@ -598,7 +620,21 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const saved = loadFromStorage<ViewRoute>('currentRoute', 'dashboard');
         const publicRoutes: ViewRoute[] = ['home', 'about', 'contact', 'login', 'register', 'forgot-password', 'onboarding'];
         if (!publicRoutes.includes(saved)) {
-          setCurrentRoute(saved);
+          if (resolvedRole === 'member') {
+            const memberAllowed: ViewRoute[] = [
+              'projects',
+              'project-detail',
+              'clients',
+              'client-detail',
+              'messages',
+              'timeline',
+              'personal-timeline',
+              'settings',
+            ];
+            setCurrentRoute(memberAllowed.includes(saved) ? saved : 'projects');
+          } else {
+            setCurrentRoute(saved);
+          }
         } else {
           setCurrentRoute(resolvedRole === 'admin' ? 'dashboard' : 'projects');
         }
@@ -610,11 +646,11 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         try {
           localStorage.removeItem('my_journey_user');
         } catch {}
-        const saved = loadFromStorage<ViewRoute>('currentRoute', 'home');
-        const publicRoutes: ViewRoute[] = ['home', 'about', 'contact', 'login', 'register', 'forgot-password', 'onboarding'];
-        if (!publicRoutes.includes(saved)) {
-          setCurrentRoute('home');
-        }
+        // Retain public page navigation if visitor explicitly clicked about/contact/login, else home
+        setCurrentRoute((prev) => {
+          const publicAllowed: ViewRoute[] = ['home', 'about', 'contact', 'login', 'register', 'forgot-password'];
+          return publicAllowed.includes(prev) ? prev : 'home';
+        });
       }
       // Session check complete — stop showing loading screen
       setAuthLoading(false);
@@ -641,6 +677,17 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
           onboarded: true,
         }));
         syncWithSupabase();
+
+        // Direct user on auth event or if coming from login/home:
+        // admin -> 'dashboard', member -> 'projects'
+        const targetRoute: ViewRoute = resolvedRole === 'member' ? 'projects' : 'dashboard';
+        setCurrentRoute((prev) => {
+          if (prev === 'login' || prev === 'register' || prev === 'home') {
+            saveToStorage('currentRoute', targetRoute);
+            return targetRoute;
+          }
+          return prev;
+        });
       } else if (_event === 'SIGNED_OUT') {
         setUser(GUEST_USER);
         try {
@@ -1355,9 +1402,15 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   // Team & Member Access Control
-  const userRole: UserRole = user.role || 'admin';
-  const isAdmin = userRole === 'admin';
-  const isMember = userRole === 'member';
+  const isAuthenticated = Boolean(
+    user &&
+    user.email &&
+    user.onboarded &&
+    !user.email.toLowerCase().includes('alex.mercer')
+  );
+  const userRole: UserRole = isAuthenticated ? (user.role || 'member') : ('guest' as any);
+  const isAdmin = isAuthenticated && userRole === 'admin';
+  const isMember = isAuthenticated && userRole === 'member';
 
   const currentMember = teamMembers.find(
     (m) => user.email && m.email.toLowerCase() === user.email.toLowerCase()
@@ -1473,9 +1526,12 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return Boolean(t.createdBy && user.email && t.createdBy.toLowerCase() === user.email.toLowerCase());
   });
 
-  // Guard member routes: members can only see 'projects', 'project-detail', 'clients', 'client-detail', 'messages', 'timeline'
+  // Guard member routes: members can only see member-allowed routes
   useEffect(() => {
-    if (isMember) {
+    if (isAuthenticated && isMember) {
+      const publicRoutes: ViewRoute[] = ['home', 'about', 'contact'];
+      if (publicRoutes.includes(currentRoute)) return;
+
       const allowedRoutes: ViewRoute[] = [
         'projects',
         'project-detail',
@@ -1484,12 +1540,13 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         'messages',
         'timeline',
         'personal-timeline',
+        'settings',
       ];
       if (!allowedRoutes.includes(currentRoute)) {
         setCurrentRoute('projects');
       }
     }
-  }, [isMember, currentRoute]);
+  }, [isAuthenticated, isMember, currentRoute]);
 
   const addTeamMember = (data: Omit<TeamMember, 'id' | 'createdAt'>): TeamMember => {
     const newMember: TeamMember = {
@@ -1816,9 +1873,8 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     showToast(`Project "${target.name}" rejected.`, 'info');
   };
 
-  // loginUser: Pure Supabase Auth — validates credentials against Supabase only.
-  // Returns false synchronously (for UI); actual navigation happens after Supabase responds.
-  const loginUser = (email: string, password?: string): boolean => {
+  // loginUser: Pure Supabase Auth with Team Member fallback
+  const loginUser = async (email: string, password?: string): Promise<boolean> => {
     const cleanEmail = email.trim().toLowerCase();
 
     if (!password) {
@@ -1826,37 +1882,44 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return false;
     }
 
-    // Try Supabase first
-    supabaseService.signIn(cleanEmail, password)
-      .then(({ data: authData, error: authError }) => {
-        if (authData?.user && !authError) {
-          const authUser = authData.user;
-          const resolvedRole: UserRole =
-            (authUser.user_metadata?.role as UserRole) ||
-            (cleanEmail.includes('admin') ? 'admin' : 'member');
+    try {
+      // 1. Try Supabase first
+      const { data: authData, error: authError } = await supabaseService.signIn(cleanEmail, password);
+      if (authData?.user && !authError) {
+        const authUser = authData.user;
+        const matchedDbMember = teamMembers.find(
+          (m) => m.email.toLowerCase() === cleanEmail
+        );
+        const resolvedRole: UserRole =
+          (authUser.user_metadata?.role as UserRole) ||
+          matchedDbMember?.role ||
+          (cleanEmail === 'rraghabbarik@gmail.com' ? 'admin' : (cleanEmail.includes('admin') ? 'admin' : 'member'));
 
-          setUser({
-            name: authUser.user_metadata?.name || cleanEmail.split('@')[0].replace(/[._-]/g, ' '),
-            email: authUser.email || cleanEmail,
-            role: resolvedRole,
-            title: resolvedRole === 'admin' ? 'Administrator' : 'Client Project Specialist',
-            avatarUrl: '',
-            trackingInterests: INITIAL_USER.trackingInterests,
-            onboarded: true,
-            theme: user.theme || 'dark',
-          });
-          showToast(
-            resolvedRole === 'admin'
-              ? `Welcome Admin! Signed in as ${authUser.user_metadata?.name || cleanEmail}`
-              : `Signed in as Member. Access to your allocated clients & projects.`
-          );
-          syncWithSupabase();
-          if (resolvedRole === 'member') {
-            navigateTo('projects');
-          } else {
-            navigateTo('dashboard');
-          }
-        } else {
+        const newUser: UserProfile = {
+          name: authUser.user_metadata?.name || matchedDbMember?.name || cleanEmail.split('@')[0].replace(/[._-]/g, ' '),
+          email: authUser.email || cleanEmail,
+          role: resolvedRole,
+          title: resolvedRole === 'admin' ? 'Administrator' : (matchedDbMember?.title || 'Client Project Specialist'),
+          avatarUrl: '',
+          trackingInterests: INITIAL_USER.trackingInterests,
+          onboarded: true,
+          theme: user.theme || 'dark',
+        };
+        setUser(newUser);
+        saveToStorage('user', newUser);
+
+        const targetRoute: ViewRoute = resolvedRole === 'member' ? 'projects' : 'dashboard';
+        setCurrentRoute(targetRoute);
+        saveToStorage('currentRoute', targetRoute);
+
+        showToast(
+          resolvedRole === 'admin'
+            ? `Welcome Admin! Signed in as ${newUser.name || cleanEmail}`
+            : `Welcome Member! Access to your allocated clients & projects.`
+        );
+        syncWithSupabase();
+        return true;
+      } else {
           // Supabase login failed — try local team member password as fallback.
           // This also handles "Email not confirmed" errors so members can still sign in.
           const matchedMember = teamMembers.find(
@@ -1879,27 +1942,35 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 : `Signed in as Member: ${matchedMember.name}`
             );
             syncWithSupabase();
-            if (matchedMember.role === 'member') {
-              navigateTo('projects');
-            } else {
-              navigateTo('dashboard');
-            }
-          } else {
-            // Show a user-friendly message instead of raw Supabase errors
-            const rawMsg: string = (authError as any)?.message || '';
-            const errMsg = rawMsg.toLowerCase().includes('email not confirmed')
-              ? 'Sign in failed. Please ask your admin to verify your account.'
-              : rawMsg || 'Invalid email or password';
-            showToast(errMsg, 'warning');
-          }
+          const targetRoute: ViewRoute = matchedMember.role === 'member' ? 'projects' : 'dashboard';
+          setCurrentRoute(targetRoute);
+          saveToStorage('currentRoute', targetRoute);
+          saveToStorage('user', {
+            name: matchedMember.name,
+            email: matchedMember.email,
+            role: matchedMember.role,
+            title: matchedMember.title,
+            avatarUrl: '',
+            trackingInterests: INITIAL_USER.trackingInterests,
+            onboarded: true,
+            theme: user.theme || 'dark',
+          });
+          return true;
+        } else {
+          // Show a user-friendly message instead of raw Supabase errors
+          const rawMsg: string = (authError as any)?.message || '';
+          const errMsg = rawMsg.toLowerCase().includes('email not confirmed')
+            ? 'Sign in failed. Please ask your admin to verify your account.'
+            : rawMsg || 'Invalid email or password';
+          showToast(errMsg, 'warning');
+          return false;
         }
-      })
-      .catch((e) => {
-        console.warn('Supabase signIn error:', e);
-        showToast('Sign in failed. Please check your connection.', 'warning');
-      });
-
-    return true; // Return synchronously; state updates happen async above
+      }
+    } catch (e) {
+      console.warn('Supabase signIn error:', e);
+      showToast('Sign in failed. Please check your connection.', 'warning');
+      return false;
+    }
   };
 
   const logoutUser = () => {
