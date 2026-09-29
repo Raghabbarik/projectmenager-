@@ -7,6 +7,7 @@ import { CommandPalette } from './components/layout/CommandPalette';
 import { QuickAddModal } from './components/common/QuickAddModal';
 import { ToastContainer } from './components/common/Toast';
 import { DeleteConfirmModal } from './components/common/DeleteConfirmModal';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { ActivityFormModal } from './components/activities/ActivityFormModal';
 import { ProjectFormModal } from './components/projects/ProjectFormModal';
 import { IdeaFormModal } from './components/ideas/IdeaFormModal';
@@ -241,8 +242,10 @@ const AppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <JourneyProvider>
-      <AppContent />
-    </JourneyProvider>
+    <ErrorBoundary>
+      <JourneyProvider>
+        <AppContent />
+      </JourneyProvider>
+    </ErrorBoundary>
   );
 }

@@ -24,6 +24,7 @@ export const ProjectsPage: React.FC = () => {
     isAdmin,
     openProjectModal,
     clients,
+    visibleClients,
     approveProject,
     rejectProject,
   } = useJourney();
