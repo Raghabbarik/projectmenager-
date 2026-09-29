@@ -13,9 +13,52 @@
     scroll-behavior: smooth;
   }
 
+  /* ColorHunt Palette 1a120b / 3c2a21 / d5cea3 / e5e5cb */
   html.dark, :root.dark {
     color-scheme: dark;
-    background-color: #0a0a0a;
+    background-color: #1a120b;
+
+    /* Theme Overrides for Dark Mode */
+    --color-neutral-950: #1a120b; /* Base canvas background */
+    --color-neutral-900: #3c2a21; /* Card, sidebar, navbar, modals */
+    --color-neutral-850: #4a3429; /* Slightly elevated card */
+    --color-neutral-800: #573f32; /* Interactive hover, active items, secondary card */
+    --color-neutral-700: #6f5242; /* Borders, dividers */
+    --color-neutral-600: #8a6854; /* Accent borders, subtle chips */
+    --color-neutral-500: #b59881; /* Muted text & secondary icons */
+    --color-neutral-400: #d5cea3; /* Highlights, badges, active accents */
+    --color-neutral-300: #ded7bc; /* Soft body text */
+    --color-neutral-200: #e5e5cb; /* Crisp secondary headings & cream text */
+    --color-neutral-100: #f4f3e6; /* Clean bright text */
+    --color-neutral-50: #faf9f2;
+
+    /* Primary brand colors tuned to ColorHunt palette */
+    --color-indigo-950: #1a120b;
+    --color-indigo-900: #3c2a21;
+    --color-indigo-800: #4f372a;
+    --color-indigo-700: #684837;
+    --color-indigo-600: #8c5a3c; /* Warm roasted bronze for primary buttons */
+    --color-indigo-500: #d5cea3; /* Active accents / badge glows */
+    --color-indigo-400: #d5cea3; /* Accent text */
+    --color-indigo-300: #e5e5cb;
+    --color-indigo-200: #f4f3e6;
+    --color-indigo-100: #faf9f2;
+
+    --color-violet-950: #1a120b;
+    --color-violet-900: #3c2a21;
+    --color-violet-800: #4f372a;
+    --color-violet-700: #684837;
+    --color-violet-600: #8c5a3c;
+    --color-violet-500: #d5cea3;
+    --color-violet-400: #d5cea3;
+
+    --color-emerald-950: #1a120b;
+    --color-emerald-900: #3c2a21;
+    --color-emerald-800: #4f372a;
+    --color-emerald-700: #684837;
+    --color-emerald-600: #8c5a3c;
+    --color-emerald-500: #d5cea3;
+    --color-emerald-400: #d5cea3;
   }
 
   body {
@@ -25,8 +68,13 @@
   }
 
   html.dark body {
-    background-color: #0a0a0a;
-    color: #ededed;
+    background-color: #1a120b;
+    color: #e5e5cb;
+  }
+
+  html.dark ::selection {
+    background-color: #d5cea3;
+    color: #1a120b;
   }
 
   /* Clean subtle scrollbars */
@@ -43,5 +91,12 @@
   }
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(150, 150, 150, 0.4);
+  }
+
+  html.dark ::-webkit-scrollbar-thumb {
+    background: rgba(213, 206, 163, 0.35);
+  }
+  html.dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(229, 229, 203, 0.7);
   }
 }

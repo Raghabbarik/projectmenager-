@@ -58,7 +58,7 @@ export const AboutPage: React.FC = () => {
         </div>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-50 leading-tight">
           {publicContent.about.title}{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-[#d5cea3] dark:to-[#e5e5cb]">
             {publicContent.about.gradientTitle}
           </span>
         </h1>

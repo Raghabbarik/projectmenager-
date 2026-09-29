@@ -357,7 +357,7 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
       savedUser.onboarded &&
       !savedUser.email.toLowerCase().includes('alex.mercer')
     );
-    if (!hasAuth) {
+    if (!hasAuth || !savedUser) {
       // First-time or unauthenticated visitor: always default to the public home page
       return 'home';
     }
@@ -2247,7 +2247,6 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isMember,
         visibleProjects,
         visibleClients,
-        visibleTasks,
         currentMember,
         isSelfProject,
 

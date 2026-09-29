@@ -63,7 +63,7 @@ export const PublicHeader: React.FC = () => {
     >
       {/* Dynamic Scroll Progress Bar */}
       <motion.div
-        className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-400 origin-left z-50 shadow-[0_0_10px_rgba(99,102,241,0.6)]"
+        className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-gradient-to-r from-indigo-500 via-violet-500 to-sky-400 dark:from-[#d5cea3] dark:via-[#e5e5cb] dark:to-[#d5cea3] origin-left z-50 shadow-[0_0_10px_rgba(99,102,241,0.6)] dark:shadow-[0_0_10px_rgba(213,206,163,0.4)]"
         style={{ scaleX }}
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">

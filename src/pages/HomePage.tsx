@@ -87,7 +87,7 @@ export const HomePage: React.FC = () => {
           className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-50 max-w-4xl mx-auto leading-[1.12]"
         >
           {publicContent.home.heroTitle}{' '}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-500">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-violet-600 to-sky-500 dark:from-[#d5cea3] dark:via-[#e5e5cb] dark:to-[#d5cea3]">
             {publicContent.home.heroGradientTitle}
           </span>
         </motion.h1>

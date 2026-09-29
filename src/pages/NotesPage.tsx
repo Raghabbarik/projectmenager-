@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useJourney } from '../context/JourneyContext';
+import type { Note } from '../types';
 import {
   FileText,
   Plus,
