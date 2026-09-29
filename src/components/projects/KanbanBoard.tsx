@@ -24,7 +24,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ projectId }) => {
   const [newPriority, setNewPriority] = useState<PriorityLevel>('medium');
   const [newDueDate, setNewDueDate] = useState('');
 
-  const projectTasks = tasks.filter((t) => t.projectId === projectId);
+  const projectTasks = tasks.filter(
+    (t) => t.projectId === projectId && t.projectId !== 'personal' && !t.isPersonal
+  );
 
   const columns: { status: TaskStatus; label: string; count: number }[] = [
     { status: 'todo', label: 'Todo', count: projectTasks.filter((t) => t.status === 'todo').length },
@@ -36,6 +38,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ projectId }) => {
     if (!newTitle.trim()) return;
     addTask({
       projectId,
+      isPersonal: false,
       title: newTitle.trim(),
       status,
       priority: newPriority,

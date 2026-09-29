@@ -26,15 +26,11 @@ export const QuickAddModal: React.FC = () => {
     if (action === 'note') openNoteModal();
     if (action === 'client') openClientModal();
     if (action === 'task') {
-      const targetProject = projects[0]?.id || '';
-      if (!targetProject) {
-        openProjectModal();
-        return;
-      }
-      const title = window.prompt('Quick Task Title:');
+      const title = window.prompt('Quick Personal Task / Habit Title:');
       if (title && title.trim()) {
         addTask({
-          projectId: targetProject,
+          projectId: 'personal',
+          isPersonal: true,
           title: title.trim(),
           status: 'todo',
           priority: 'medium',

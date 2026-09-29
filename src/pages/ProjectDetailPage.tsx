@@ -92,7 +92,9 @@ export const ProjectDetailPage: React.FC = () => {
     );
   }
 
-  const projectTasks = tasks.filter((t) => t.projectId === project.id);
+  const projectTasks = tasks.filter(
+    (t) => t.projectId === project.id && t.projectId !== 'personal' && !t.isPersonal
+  );
   const completedTasks = projectTasks.filter((t) => t.status === 'completed');
   const projectMilestones = milestones.filter((m) => m.projectId === project.id);
   const projectActivities = activities.filter((a) => a.projectId === project.id);

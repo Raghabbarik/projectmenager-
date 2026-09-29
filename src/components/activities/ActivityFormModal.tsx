@@ -406,20 +406,30 @@ export const ActivityFormModal: React.FC = () => {
                         Add New Client
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          placeholder="Company / Client Name *"
-                          value={newClientCompany}
-                          onChange={(e) => setNewClientCompany(e.target.value)}
-                          className="px-2.5 py-1.5 text-xs rounded border border-neutral-200 dark:border-neutral-700 bg-transparent text-neutral-900 dark:text-neutral-100"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Contact Person (e.g. Alex Smith)"
-                          value={newClientName}
-                          onChange={(e) => setNewClientName(e.target.value)}
-                          className="px-2.5 py-1.5 text-xs rounded border border-neutral-200 dark:border-neutral-700 bg-transparent text-neutral-900 dark:text-neutral-100"
-                        />
+                        <div>
+                          <label className="block text-[10px] font-semibold text-neutral-700 dark:text-neutral-300 mb-0.5">
+                            Client / Company Name *
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Hotel Grand, Apex Tech..."
+                            value={newClientCompany}
+                            onChange={(e) => setNewClientCompany(e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs rounded border border-neutral-200 dark:border-neutral-700 bg-transparent text-neutral-900 dark:text-neutral-100"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-neutral-700 dark:text-neutral-300 mb-0.5">
+                            Client Contact Person Name
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Siddharth Rao, Manager..."
+                            value={newClientName}
+                            onChange={(e) => setNewClientName(e.target.value)}
+                            className="w-full px-2.5 py-1.5 text-xs rounded border border-neutral-200 dark:border-neutral-700 bg-transparent text-neutral-900 dark:text-neutral-100"
+                          />
+                        </div>
                       </div>
                       <div className="flex justify-end gap-2 pt-1">
                         <button

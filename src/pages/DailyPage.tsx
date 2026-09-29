@@ -50,7 +50,7 @@ export const DailyPage: React.FC = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<PriorityLevel>('high');
   const [isAddingTask, setIsAddingTask] = useState(false);
-  const [targetProjectId, setTargetProjectId] = useState<string>('');
+  const [targetProjectId, setTargetProjectId] = useState<string>('personal');
 
   // Change date by offset in days
   const adjustDate = (days: number) => {
@@ -167,15 +167,17 @@ export const DailyPage: React.FC = () => {
   const handleCreateTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
-    const projectToUse = targetProjectId || projects[0]?.id || 'proj-1';
+    const isPersonal = !targetProjectId || targetProjectId === 'personal';
     addTask({
-      projectId: projectToUse,
+      projectId: isPersonal ? 'personal' : targetProjectId,
+      isPersonal,
       title: newTaskTitle.trim(),
       status: 'in_progress',
       priority: newTaskPriority,
       dueDate: currentDate,
     });
     setNewTaskTitle('');
+    setTargetProjectId('personal');
     setIsAddingTask(false);
   };
 
@@ -542,11 +544,16 @@ export const DailyPage: React.FC = () => {
                   onChange={(e) => setTargetProjectId(e.target.value)}
                   className="px-2.5 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
+                  <option value="personal">👤 Personal Daily Task / Habit</option>
+                  {projects.length > 0 && (
+                    <optgroup label="Attach to Project">
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} {p.clientId ? '(Client Project)' : '(Self Project)'}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
                 <select
                   value={newTaskPriority}

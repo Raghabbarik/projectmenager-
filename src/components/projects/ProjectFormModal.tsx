@@ -339,20 +339,30 @@ export const ProjectFormModal: React.FC = () => {
                     {isMember ? 'Register New Client (Submit for Approval)' : 'Quick Add Client'}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Company Name *"
-                      value={newClientCompany}
-                      onChange={(e) => setNewClientCompany(e.target.value)}
-                      className="px-2.5 py-1.5 text-xs rounded border border-neutral-200 dark:border-neutral-700 bg-transparent"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Contact Name"
-                      value={newClientName}
-                      onChange={(e) => setNewClientName(e.target.value)}
-                      className="px-2.5 py-1.5 text-xs rounded border border-neutral-200 dark:border-neutral-700 bg-transparent"
-                    />
+                    <div>
+                      <label className="block text-[10px] font-semibold text-neutral-700 dark:text-neutral-300 mb-0.5">
+                        Client / Company Name *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Hotel Grand, Apex Tech..."
+                        value={newClientCompany}
+                        onChange={(e) => setNewClientCompany(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded border border-neutral-200 dark:border-neutral-700 bg-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-neutral-700 dark:text-neutral-300 mb-0.5">
+                        Client Contact Person Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Siddharth Rao, Manager..."
+                        value={newClientName}
+                        onChange={(e) => setNewClientName(e.target.value)}
+                        className="w-full px-2.5 py-1.5 text-xs rounded border border-neutral-200 dark:border-neutral-700 bg-transparent"
+                      />
+                    </div>
                   </div>
                   <input
                     type="email"

@@ -78,7 +78,8 @@ export type TaskStatus = 'todo' | 'in_progress' | 'completed';
 
 export interface Task {
   id: string;
-  projectId: string;
+  projectId?: string;
+  isPersonal?: boolean;
   title: string;
   description?: string;
   status: TaskStatus;
@@ -86,6 +87,7 @@ export interface Task {
   dueDate?: string;
   completedAt?: string;
   createdAt: string;
+  createdBy?: string;
 }
 
 export type MilestoneStatus = 'pending' | 'in_progress' | 'completed';

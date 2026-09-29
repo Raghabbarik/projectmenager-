@@ -76,6 +76,7 @@ interface JourneyContextType {
   activities: Activity[];
   projects: Project[];
   tasks: Task[];
+  visibleTasks: Task[];
   milestones: Milestone[];
   ideas: Idea[];
   clients: Client[];
@@ -321,6 +322,32 @@ function saveToStorage<T>(key: string, value: T) {
   }
 }
 
+// Cleanse any personal habit/daily tasks from being erroneously attached to client projects
+export const cleanPersonalTasks = (rawTasks: Task[]): Task[] => {
+  return (rawTasks || []).map((t) => {
+    const titleLower = (t.title || '').toLowerCase();
+    const isPersonalItem =
+      titleLower.includes('water') ||
+      titleLower.includes('redish') ||
+      titleLower.includes('my journey application') ||
+      titleLower.includes('exercise') ||
+      titleLower.includes('habit') ||
+      titleLower.includes('daly') ||
+      titleLower.includes('daily') ||
+      titleLower.includes('personal') ||
+      t.isPersonal === true ||
+      t.projectId === 'personal' ||
+      !t.projectId;
+
+    if (isPersonalItem && (t.projectId !== 'personal' || !t.isPersonal)) {
+      const cleanTask: Task = { ...t, projectId: 'personal', isPersonal: true };
+      supabaseService.saveTask(cleanTask);
+      return cleanTask;
+    }
+    return t;
+  });
+};
+
 export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentRoute, setCurrentRoute] = useState<ViewRoute>(() => {
     const savedUser = loadFromStorage<UserProfile | null>('user', null);
@@ -386,7 +413,7 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [settings, setSettings] = useState<UserSettings>(() => loadFromStorage('settings', INITIAL_SETTINGS));
   const [activities, setActivities] = useState<Activity[]>(() => loadFromStorage('activities', []));
   const [projects, setProjects] = useState<Project[]>(() => loadFromStorage('projects', []));
-  const [tasks, setTasks] = useState<Task[]>(() => loadFromStorage('tasks', []));
+  const [tasks, setTasks] = useState<Task[]>(() => cleanPersonalTasks(loadFromStorage('tasks', [])));
   const [milestones, setMilestones] = useState<Milestone[]>(() => loadFromStorage('milestones', []));
   const [ideas, setIdeas] = useState<Idea[]>(() => loadFromStorage('ideas', []));
   const [clients, setClients] = useState<Client[]>(() => loadFromStorage('clients', []));
@@ -510,7 +537,7 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (dbClients && dbClients.length > 0) setClients(dbClients);
       if (dbProjects && dbProjects.length > 0) setProjects(dbProjects);
       if (dbActivities && dbActivities.length > 0) setActivities(dbActivities);
-      if (dbTasks && dbTasks.length > 0) setTasks(dbTasks);
+      if (dbTasks && dbTasks.length > 0) setTasks(cleanPersonalTasks(dbTasks));
       if (dbIdeas && dbIdeas.length > 0) setIdeas(dbIdeas);
       if (dbNotes && dbNotes.length > 0) setNotes(dbNotes);
       if (dbAccounts && dbAccounts.length > 0) setAccounts(dbAccounts);
@@ -645,7 +672,7 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, async () => {
         const ts = await supabaseService.fetchTasks();
-        if (ts) setTasks(ts);
+        if (ts) setTasks(cleanPersonalTasks(ts));
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'team_members' }, async () => {
         const tm = await supabaseService.fetchTeamMembers();
@@ -935,10 +962,14 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Task Operations
   const addTask = (data: Omit<Task, 'id' | 'createdAt'>): Task => {
+    const isPersonal = data.isPersonal ?? (data.projectId === 'personal' || !data.projectId);
     const newTask: Task = {
       ...data,
+      projectId: isPersonal ? 'personal' : (data.projectId || 'personal'),
+      isPersonal,
       id: `task-${Date.now()}`,
       createdAt: new Date().toISOString(),
+      createdBy: user.email || undefined,
     };
     setTasks((prev) => [...prev, newTask]);
     supabaseService.saveTask(newTask);
@@ -1430,6 +1461,16 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     return false;
+  });
+
+  const visibleTasks = tasks.filter((t) => {
+    if (!isMember) return true;
+    // Members only see tasks that belong to visibleProjects
+    if (t.projectId && t.projectId !== 'personal' && !t.isPersonal) {
+      return visibleProjects.some((p) => p.id === t.projectId);
+    }
+    // Members only see their own personal tasks (never admin's personal tasks)
+    return Boolean(t.createdBy && user.email && t.createdBy.toLowerCase() === user.email.toLowerCase());
   });
 
   // Guard member routes: members can only see 'projects', 'project-detail', 'clients', 'client-detail', 'messages', 'timeline'
@@ -2023,6 +2064,7 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         activities,
         projects,
         tasks,
+        visibleTasks,
         milestones,
         ideas,
         clients,
@@ -2134,6 +2176,7 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isMember,
         visibleProjects,
         visibleClients,
+        visibleTasks,
         currentMember,
         isSelfProject,
 

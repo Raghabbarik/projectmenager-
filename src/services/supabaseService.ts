@@ -86,9 +86,11 @@ const mapActivityFromDb = (row: any): Activity => {
 
 const mapTaskFromDb = (row: any): Task => {
   const raw = row.raw_data || {};
+  const isPersonalTask = raw.isPersonal ?? (row.project_id === 'personal' || !row.project_id);
   return {
     id: row.id,
-    projectId: row.project_id || raw.projectId || '',
+    projectId: row.project_id || raw.projectId || 'personal',
+    isPersonal: isPersonalTask,
     title: row.title || raw.title || '',
     description: row.description || raw.description,
     status: row.status || raw.status || 'todo',
@@ -96,6 +98,7 @@ const mapTaskFromDb = (row: any): Task => {
     dueDate: row.due_date || raw.dueDate,
     completedAt: row.completed_at || raw.completedAt,
     createdAt: row.created_at || raw.createdAt || new Date().toISOString(),
+    createdBy: raw.createdBy,
   };
 };
 

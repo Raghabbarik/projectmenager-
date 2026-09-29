@@ -59,11 +59,13 @@ export const ClientFormModal: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !company.trim()) return;
+    const finalCompany = company.trim();
+    const finalName = name.trim() || finalCompany;
+    if (!finalCompany) return;
 
     const payload = {
-      name: name.trim(),
-      company: company.trim(),
+      name: finalName,
+      company: finalCompany,
       email: email.trim(),
       phone: phone.trim(),
       notes: notes.trim() || undefined,
@@ -103,7 +105,7 @@ export const ClientFormModal: React.FC = () => {
               {clientModal.editId ? 'Edit Client' : 'Add Client & Connect Projects'}
             </h3>
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              Organize stakeholder contacts and attach deliverables
+              Organize client details, contact persons, and attach deliverables
             </p>
           </div>
           <button
@@ -126,8 +128,9 @@ export const ClientFormModal: React.FC = () => {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              Company / Organization *
+            <label className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-1 flex items-center justify-between">
+              <span>Client Name / Company Name *</span>
+              <span className="text-[10px] text-neutral-400 font-normal">Business or Individual Client</span>
             </label>
             <input
               type="text"
@@ -135,21 +138,21 @@ export const ClientFormModal: React.FC = () => {
               autoFocus
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              placeholder="e.g. ABC Technologies, Apex Digital..."
+              placeholder="e.g. Hotel Grand, Apex Digital, Dr. Sharma..."
               className="w-full px-3 py-2 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-              Primary Contact Person *
+            <label className="block text-xs font-semibold text-neutral-800 dark:text-neutral-200 mb-1 flex items-center justify-between">
+              <span>Client Contact Person Name</span>
+              <span className="text-[10px] text-neutral-400 font-normal">Primary Representative</span>
             </label>
             <input
               type="text"
-              required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Siddharth Rao"
+              placeholder="e.g. Siddharth Rao, Hotel Manager (or same as client name)"
               className="w-full px-3 py-2 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
           </div>
