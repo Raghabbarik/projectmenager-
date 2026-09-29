@@ -64,6 +64,8 @@ interface JourneyContextType {
   selectedProjectId: string | null;
   selectedClientId: string | null;
   selectedIdeaId: string | null;
+  selectedNoteId: string | null;
+  setSelectedNoteId: (id: string | null) => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   navigateTo: (route: ViewRoute, id?: string) => void;
@@ -247,10 +249,28 @@ interface JourneyContextType {
 
 const JourneyContext = createContext<JourneyContextType | undefined>(undefined);
 
+export const GUEST_USER: UserProfile = {
+  name: 'Guest',
+  email: '',
+  role: 'member',
+  title: 'Guest Visitor',
+  avatarUrl: '',
+  trackingInterests: [
+    'Reading',
+    'Learning',
+    'Work',
+    'Coding/Building',
+    'Exercise',
+    'Personal',
+  ],
+  onboarded: false,
+  theme: 'dark',
+};
+
 // Purge legacy mock sample data from localStorage so the app runs purely on live data
 const cleanLegacyMockData = () => {
   try {
-    const isCleaned = localStorage.getItem('my_journey_mock_purged_v7');
+    const isCleaned = localStorage.getItem('my_journey_mock_purged_v8');
     if (!isCleaned) {
       const keys = [
         'activities',
@@ -269,7 +289,12 @@ const cleanLegacyMockData = () => {
         'currentRoute', // Reset route so auth flow redirects correctly
       ];
       keys.forEach((k) => localStorage.removeItem(`my_journey_${k}`));
-      localStorage.setItem('my_journey_mock_purged_v7', 'true');
+      // Purge any stored user if it's the old mock Alex Mercer account
+      const savedUserStr = localStorage.getItem('my_journey_user');
+      if (savedUserStr && (savedUserStr.includes('alex.mercer') || savedUserStr.includes('Alex Mercer'))) {
+        localStorage.removeItem('my_journey_user');
+      }
+      localStorage.setItem('my_journey_mock_purged_v8', 'true');
     }
   } catch (e) {
     console.warn('Error clearing legacy mock data:', e);
@@ -297,21 +322,67 @@ function saveToStorage<T>(key: string, value: T) {
 }
 
 export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentRoute, setCurrentRoute] = useState<ViewRoute>(() =>
-    loadFromStorage('currentRoute', 'home')
-  );
+  const [currentRoute, setCurrentRoute] = useState<ViewRoute>(() => {
+    const savedUser = loadFromStorage<UserProfile | null>('user', null);
+    const hasAuth = Boolean(savedUser && savedUser.email && !savedUser.email.toLowerCase().includes('alex.mercer'));
+    const savedRoute = loadFromStorage<ViewRoute>('currentRoute', 'home');
+    const publicRoutes: ViewRoute[] = ['home', 'about', 'contact', 'login', 'register', 'forgot-password', 'onboarding'];
+    if (!hasAuth && !publicRoutes.includes(savedRoute)) {
+      return 'home';
+    }
+    return savedRoute;
+  });
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Handle URL deep-linking for opening notes, ideas, and projects in new tabs
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const routeParam = params.get('route') as ViewRoute | null;
+        const viewParam = params.get('view');
+        const idParam = params.get('id');
+
+        if (routeParam === 'note-detail' || viewParam === 'note') {
+          if (idParam) {
+            setSelectedNoteId(idParam);
+            setCurrentRoute('note-detail');
+          }
+        } else if (routeParam === 'idea-detail' || viewParam === 'idea') {
+          if (idParam) {
+            setSelectedIdeaId(idParam);
+            setCurrentRoute('idea-detail');
+          }
+        } else if (routeParam) {
+          if (idParam) {
+            if (routeParam === 'project-detail') setSelectedProjectId(idParam);
+            if (routeParam === 'client-detail') setSelectedClientId(idParam);
+          }
+          setCurrentRoute(routeParam);
+        }
+      } catch (err) {
+        console.warn('Error reading URL search params:', err);
+      }
+    }
+  }, []);
 
   // Supabase Connection & Live State
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(true);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [authLoading, setAuthLoading] = useState<boolean>(true); // true until session is resolved
 
-  // Domain states with localStorage caching & clean live defaults (No mock temp data)
-  const [user, setUser] = useState<UserProfile>(() => loadFromStorage('user', INITIAL_USER));
+  // Domain states with localStorage caching & clean live defaults (Visitors default to GUEST_USER)
+  const [user, setUser] = useState<UserProfile>(() => {
+    const saved = loadFromStorage<UserProfile | null>('user', null);
+    if (saved && saved.email && !saved.email.toLowerCase().includes('alex.mercer')) {
+      return saved;
+    }
+    return GUEST_USER;
+  });
   const [settings, setSettings] = useState<UserSettings>(() => loadFromStorage('settings', INITIAL_SETTINGS));
   const [activities, setActivities] = useState<Activity[]>(() => loadFromStorage('activities', []));
   const [projects, setProjects] = useState<Project[]>(() => loadFromStorage('projects', []));
@@ -507,11 +578,15 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         syncWithSupabase();
       } else {
-        // No session — redirect to login unless already on a public page
+        // No active session — ensure visitor state is purely unauthenticated guest
+        setUser(GUEST_USER);
+        try {
+          localStorage.removeItem('my_journey_user');
+        } catch {}
         const saved = loadFromStorage<ViewRoute>('currentRoute', 'home');
         const publicRoutes: ViewRoute[] = ['home', 'about', 'contact', 'login', 'register', 'forgot-password', 'onboarding'];
         if (!publicRoutes.includes(saved)) {
-          setCurrentRoute('login');
+          setCurrentRoute('home');
         }
       }
       // Session check complete — stop showing loading screen
@@ -540,7 +615,12 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }));
         syncWithSupabase();
       } else if (_event === 'SIGNED_OUT') {
-        setCurrentRoute('login');
+        setUser(GUEST_USER);
+        try {
+          localStorage.removeItem('my_journey_user');
+          localStorage.setItem('my_journey_currentRoute', JSON.stringify('home'));
+        } catch {}
+        setCurrentRoute('home');
       }
     });
 
@@ -677,7 +757,8 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (id) {
       if (route === 'project-detail') setSelectedProjectId(id);
       if (route === 'client-detail') setSelectedClientId(id);
-      if (route === 'ideas') setSelectedIdeaId(id);
+      if (route === 'ideas' || route === 'idea-detail') setSelectedIdeaId(id);
+      if (route === 'notes' || route === 'note-detail') setSelectedNoteId(id);
     }
     setCurrentRoute(route);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1782,12 +1863,11 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const logoutUser = () => {
     supabaseService.signOut().catch(() => {});
-    setUser({
-      ...INITIAL_USER,
-      email: '',
-      name: 'Guest',
-      role: 'admin',
-    });
+    setUser(GUEST_USER);
+    try {
+      localStorage.removeItem('my_journey_user');
+      localStorage.setItem('my_journey_currentRoute', JSON.stringify('home'));
+    } catch {}
     showToast('Signed out successfully');
     navigateTo('home');
   };
@@ -1932,6 +2012,8 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         selectedProjectId,
         selectedClientId,
         selectedIdeaId,
+        selectedNoteId,
+        setSelectedNoteId,
         searchQuery,
         setSearchQuery,
         navigateTo,

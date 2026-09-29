@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useJourney } from '../../context/JourneyContext';
 import { Idea, IdeaStatus } from '../../types';
+import { openIdeaInNewTab } from '../../utils/tabUtils';
 import {
   Lightbulb,
   X,
@@ -18,6 +19,7 @@ import {
   Shield,
   FileText,
   TrendingUp,
+  ExternalLink,
 } from 'lucide-react';
 
 interface IdeaDetailModalProps {
@@ -112,13 +114,24 @@ export const IdeaDetailModal: React.FC<IdeaDetailModalProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-1.5 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => openIdeaInNewTab(idea)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer border border-neutral-200 dark:border-neutral-700"
+              title="Open in new browser tab"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-amber-500" />
+              <span className="hidden sm:inline">Open in Tab</span>
+            </button>
+
+            <button
+              onClick={onClose}
+              className="p-1.5 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Body */}
@@ -302,6 +315,14 @@ export const IdeaDetailModal: React.FC<IdeaDetailModalProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => openIdeaInNewTab(idea)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 transition-colors cursor-pointer"
+              title="Open in a separate browser tab"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-amber-500" />
+              <span>New Tab</span>
+            </button>
             <button
               onClick={() => {
                 onClose();

@@ -30,7 +30,12 @@ export const PublicHeader: React.FC = () => {
     });
   }, [scrollY]);
 
-  const isLoggedIn = Boolean(user && user.email && user.onboarded);
+  const isLoggedIn = Boolean(
+    user &&
+    user.email &&
+    user.onboarded &&
+    !user.email.toLowerCase().includes('alex.mercer')
+  );
 
   const toggleTheme = () => {
     const nextTheme = settings.theme === 'dark' ? 'light' : 'dark';

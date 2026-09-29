@@ -20,12 +20,13 @@ export const ProjectFormModal: React.FC = () => {
   } = useJourney();
 
   const [projectType, setProjectType] = useState<'self' | 'client'>('self');
+  const getTodayDate = () => new Date().toISOString().split('T')[0];
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('in_progress');
   const [priority, setPriority] = useState<PriorityLevel>('high');
-  const [startDate, setStartDate] = useState('2026-09-28');
+  const [startDate, setStartDate] = useState(getTodayDate);
   const [deadline, setDeadline] = useState('');
   const [progress, setProgress] = useState(0);
   const [clientId, setClientId] = useState('');
@@ -83,7 +84,7 @@ export const ProjectFormModal: React.FC = () => {
         setCategory('Client Deliverables');
         setStatus('in_progress');
         setPriority('high');
-        setStartDate('2026-09-28');
+        setStartDate(getTodayDate());
         setDeadline('');
         setProgress(0);
         setProjectType('client');
@@ -104,7 +105,7 @@ export const ProjectFormModal: React.FC = () => {
         setCategory(idea.category);
         setStatus('in_progress');
         setPriority(idea.priority);
-        setStartDate('2026-09-28');
+        setStartDate(getTodayDate());
         setDeadline('2026-11-15');
         setProgress(10);
         setProjectType('self');
@@ -124,7 +125,7 @@ export const ProjectFormModal: React.FC = () => {
         setCategory(isMember ? 'Client Deliverables' : 'Engineering & Tools');
         setStatus('in_progress');
         setPriority('high');
-        setStartDate('2026-09-28');
+        setStartDate(getTodayDate());
         setDeadline('');
         setProgress(0);
         setProjectType(isMember ? 'client' : 'self');

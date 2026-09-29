@@ -267,6 +267,8 @@ export type ViewRoute =
   | 'messages'
   | 'accounts'
   | 'notes'
+  | 'note-detail'
+  | 'idea-detail'
   | 'files'
   | 'search'
   | 'ai-assistant'

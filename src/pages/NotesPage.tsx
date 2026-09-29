@@ -11,8 +11,12 @@ import {
   Lightbulb,
   Building2,
   Calendar,
+  ExternalLink,
+  Eye,
 } from 'lucide-react';
 import { EmptyState } from '../components/common/EmptyState';
+import { NoteDetailModal } from '../components/notes/NoteDetailModal';
+import { openNoteInNewTab } from '../utils/tabUtils';
 
 export const NotesPage: React.FC = () => {
   const {
@@ -29,6 +33,19 @@ export const NotesPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [detailNote, setDetailNote] = useState<Note | null>(null);
+
+  // Check URL params or selectedNoteId to auto-open note
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const noteId = params.get('noteId') || (params.get('route') === 'notes' ? params.get('id') : null);
+      if (noteId) {
+        const found = notes.find((n) => n.id === noteId);
+        if (found) setDetailNote(found);
+      }
+    }
+  }, [notes]);
 
   // Collect all unique tags across notes
   const allTags = Array.from(
@@ -130,53 +147,94 @@ export const NotesPage: React.FC = () => {
             return (
               <div
                 key={note.id}
-                className="group relative p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 hover:border-neutral-300 dark:hover:border-neutral-700 transition-all shadow-xs flex flex-col justify-between"
+                onClick={() => setDetailNote(note)}
+                className="group relative p-5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 hover:border-indigo-400 dark:hover:border-indigo-600 transition-all shadow-xs hover:shadow-md flex flex-col justify-between cursor-pointer"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 leading-snug">
+                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                       {note.title}
                     </h3>
 
-                    <div className="relative shrink-0">
+                    <div className="flex items-center gap-1 shrink-0">
+                      {/* Open in Another Tab Quick Button */}
                       <button
-                        onClick={() =>
-                          setActiveMenuId(activeMenuId === note.id ? null : note.id)
-                        }
-                        className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openNoteInNewTab(note);
+                        }}
+                        title="Open note in another tab"
+                        className="p-1 rounded text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                       >
-                        <MoreVertical className="w-4 h-4" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </button>
 
-                      {activeMenuId === note.id && (
-                        <div className="absolute right-0 mt-1 w-32 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl py-1 z-20">
-                          <button
-                            onClick={() => {
-                              setActiveMenuId(null);
-                              openNoteModal(note.id);
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left"
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(activeMenuId === note.id ? null : note.id);
+                          }}
+                          className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+
+                        {activeMenuId === note.id && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            className="absolute right-0 mt-1 w-44 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl py-1 z-20"
                           >
-                            <Edit2 className="w-3.5 h-3.5 text-neutral-400" />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setActiveMenuId(null);
-                              requestDelete({
-                                title: 'Delete Note?',
-                                message: `Are you sure you want to remove "${note.title}"?`,
-                                confirmLabel: 'Delete Note',
-                                onConfirm: () => deleteNote(note.id),
-                              });
-                            }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-left"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      )}
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                setDetailNote(note);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-neutral-400" />
+                              <span>View Note</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                openNoteInNewTab(note);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-left"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>Open in New Tab</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                openNoteModal(note.id);
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left"
+                            >
+                              <Edit2 className="w-3.5 h-3.5 text-neutral-400" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                requestDelete({
+                                  title: 'Delete Note?',
+                                  message: `Are you sure you want to remove "${note.title}"?`,
+                                  confirmLabel: 'Delete Note',
+                                  onConfirm: () => deleteNote(note.id),
+                                });
+                              }}
+                              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-left"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -191,7 +249,11 @@ export const NotesPage: React.FC = () => {
                     <div className="flex items-center gap-2 text-[11px] text-neutral-500 flex-wrap">
                       {linkedProject && (
                         <button
-                          onClick={() => navigateTo('project-detail', linkedProject.id)}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigateTo('project-detail', linkedProject.id);
+                          }}
                           className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
                         >
                           <FolderGit2 className="w-3 h-3" />
@@ -199,16 +261,30 @@ export const NotesPage: React.FC = () => {
                         </button>
                       )}
                       {linkedIdea && (
-                        <span className="flex items-center gap-1 text-amber-600">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigateTo('ideas');
+                          }}
+                          className="flex items-center gap-1 text-amber-600 hover:underline cursor-pointer"
+                        >
                           <Lightbulb className="w-3 h-3" />
                           <span>{linkedIdea.title}</span>
-                        </span>
+                        </button>
                       )}
                       {linkedClient && (
-                        <span className="flex items-center gap-1 text-blue-600">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigateTo('client-detail', linkedClient.id);
+                          }}
+                          className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer"
+                        >
                           <Building2 className="w-3 h-3" />
                           <span>{linkedClient.company}</span>
-                        </span>
+                        </button>
                       )}
                     </div>
                   )}
@@ -226,6 +302,13 @@ export const NotesPage: React.FC = () => {
           })}
         </div>
       )}
+
+      {/* Note Detail View Modal */}
+      <NoteDetailModal
+        isOpen={Boolean(detailNote)}
+        onClose={() => setDetailNote(null)}
+        note={detailNote}
+      />
     </div>
   );
 };

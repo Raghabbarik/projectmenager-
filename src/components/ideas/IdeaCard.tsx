@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Idea } from '../../types';
 import { useJourney } from '../../context/JourneyContext';
 import { IdeaDetailModal } from './IdeaDetailModal';
+import { openIdeaInNewTab } from '../../utils/tabUtils';
 import {
   Lightbulb,
   ArrowRight,
@@ -12,6 +13,7 @@ import {
   Calendar,
   Eye,
   Sparkles,
+  ExternalLink,
 } from 'lucide-react';
 
 interface IdeaCardProps {
@@ -95,33 +97,56 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onSelect }) => {
               </span>
             </div>
 
-            <div className="relative">
+            <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setMenuOpen(!menuOpen);
+                  openIdeaInNewTab(idea);
                 }}
-                className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                aria-label="Idea options"
+                className="p-1 rounded text-neutral-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                title="Open in new tab"
+                aria-label="Open idea in new tab"
               >
-                <MoreVertical className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4" />
               </button>
 
-              {menuOpen && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="absolute right-0 mt-1 w-40 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl py-1 z-20"
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setMenuOpen(!menuOpen);
+                  }}
+                  className="p-1 rounded text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                  aria-label="Idea options"
                 >
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setDetailOpen(true);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left font-medium"
+                  <MoreVertical className="w-4 h-4" />
+                </button>
+
+                {menuOpen && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute right-0 mt-1 w-44 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl py-1 z-20"
                   >
-                    <Eye className="w-3.5 h-3.5 text-amber-500" />
-                    <span>View Clearly</span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setDetailOpen(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left font-medium"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-amber-500" />
+                      <span>View Clearly</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        openIdeaInNewTab(idea);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-left font-medium"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Open in New Tab</span>
+                    </button>
                   <button
                     onClick={() => {
                       setMenuOpen(false);
@@ -161,6 +186,7 @@ export const IdeaCard: React.FC<IdeaCardProps> = ({ idea, onSelect }) => {
                   </button>
                 </div>
               )}
+            </div>
             </div>
           </div>
 

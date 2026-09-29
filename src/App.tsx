@@ -31,6 +31,7 @@ import { DailyPage } from './pages/DailyPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { IdeasPage } from './pages/IdeasPage';
+import { IdeaDetailPage } from './pages/IdeaDetailPage';
 import { GrowthPage } from './pages/GrowthPage';
 import { TimelinePage } from './pages/TimelinePage';
 import { ClientsPage } from './pages/ClientsPage';
@@ -38,6 +39,7 @@ import { ClientDetailPage } from './pages/ClientDetailPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { AccountsPage } from './pages/AccountsPage';
 import { NotesPage } from './pages/NotesPage';
+import { NoteDetailPage } from './pages/NoteDetailPage';
 import { FilesPage } from './pages/FilesPage';
 import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -51,7 +53,7 @@ import {
 } from './pages/AuthPages';
 
 const AppContent: React.FC = () => {
-  const { currentRoute, authLoading } = useJourney();
+  const { currentRoute, authLoading, user } = useJourney();
 
   // Show loading screen while Supabase session is being resolved.
   // This prevents the white blank page on fresh load / page refresh.
@@ -165,7 +167,19 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // 3. Workspace Application Pages
+  // 3. Workspace Application Route Guard
+  // Unauthenticated users trying to access workspace pages must sign in first
+  const isAuthUser = Boolean(user && user.email && user.onboarded);
+  if (!isAuthUser) {
+    return (
+      <>
+        <LoginPage />
+        <ToastContainer />
+      </>
+    );
+  }
+
+  // Workspace Application Pages (Authenticated)
   const renderActiveRoute = () => {
     switch (currentRoute) {
       case 'dashboard':
@@ -178,6 +192,8 @@ const AppContent: React.FC = () => {
         return <ProjectDetailPage />;
       case 'ideas':
         return <IdeasPage />;
+      case 'idea-detail':
+        return <IdeaDetailPage />;
       case 'growth':
         return <GrowthPage />;
       case 'timeline':
@@ -194,6 +210,8 @@ const AppContent: React.FC = () => {
         return <AccountsPage />;
       case 'notes':
         return <NotesPage />;
+      case 'note-detail':
+        return <NoteDetailPage />;
       case 'files':
         return <FilesPage />;
       case 'search':

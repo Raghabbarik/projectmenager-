@@ -62,8 +62,14 @@ export const getActivityColor = (type: Activity['type']) => {
       return 'text-blue-600 dark:text-blue-400 bg-blue-500/10';
     case 'building':
       return 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10';
-    case 'exercise':
+    case 'personal':
       return 'text-rose-600 dark:text-rose-400 bg-rose-500/10';
+    case 'exercise':
+      return 'text-orange-600 dark:text-orange-400 bg-orange-500/10';
+    case 'meeting':
+      return 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10';
+    case 'goal':
+      return 'text-purple-600 dark:text-purple-400 bg-purple-500/10';
     case 'achievement':
       return 'text-yellow-600 dark:text-yellow-400 bg-yellow-500/10';
     default:

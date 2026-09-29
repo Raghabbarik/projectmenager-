@@ -718,7 +718,11 @@ export const ProjectDetailPage: React.FC = () => {
               </h3>
               <button
                 onClick={() =>
-                  openActivityModal({ projectId: project.id, clientId: project.clientId, date: '2026-09-28' })
+                  openActivityModal({
+                    projectId: project.id,
+                    clientId: project.clientId,
+                    date: new Date().toISOString().split('T')[0],
+                  })
                 }
                 className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold"
               >

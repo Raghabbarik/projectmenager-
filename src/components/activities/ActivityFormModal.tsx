@@ -17,10 +17,11 @@ export const ActivityFormModal: React.FC = () => {
     showToast,
   } = useJourney();
 
+  const getTodayDate = () => new Date().toISOString().split('T')[0];
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<ActivityType>('work');
-  const [date, setDate] = useState('2026-09-28');
+  const [date, setDate] = useState(getTodayDate);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [durationMinutes, setDurationMinutes] = useState(30);
@@ -57,7 +58,7 @@ export const ActivityFormModal: React.FC = () => {
         setTitle(activityModal.initialData.title || '');
         setDescription(activityModal.initialData.description || '');
         setType(activityModal.initialData.type || 'work');
-        setDate(activityModal.initialData.date || '2026-09-28');
+        setDate(activityModal.initialData.date || getTodayDate());
         setStartTime(activityModal.initialData.startTime || '');
         setEndTime(activityModal.initialData.endTime || '');
         setDurationMinutes(activityModal.initialData.durationMinutes || 30);
@@ -92,7 +93,7 @@ export const ActivityFormModal: React.FC = () => {
         setTitle('');
         setDescription('');
         setType('work');
-        setDate('2026-09-28');
+        setDate(getTodayDate());
         setStartTime('');
         setEndTime('');
         setDurationMinutes(30);

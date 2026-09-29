@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useJourney } from '../context/JourneyContext';
 import {
   Plus,
@@ -15,11 +15,107 @@ import {
   Globe,
   Sparkles,
   Users,
+  Coffee,
+  Dumbbell,
+  Target,
+  Trophy,
 } from 'lucide-react';
 import { ActivityCard, formatDuration } from '../components/activities/ActivityCard';
 import { ProjectCard } from '../components/projects/ProjectCard';
 import { IdeaCard } from '../components/ideas/IdeaCard';
 import { WeeklyProgressWidget } from '../components/dashboard/WeeklyProgressWidget';
+
+interface CategoryMeta {
+  key: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  colorClass: string;
+  badgeBg: string;
+  borderHover: string;
+}
+
+const CATEGORY_DEFINITIONS: Record<string, CategoryMeta> = {
+  work: {
+    key: 'work',
+    label: 'Work',
+    icon: Briefcase,
+    colorClass: 'text-blue-500',
+    badgeBg: 'bg-blue-500/10 dark:bg-blue-500/20',
+    borderHover: 'hover:border-blue-400 dark:hover:border-blue-600',
+  },
+  building: {
+    key: 'building',
+    label: 'Building',
+    icon: Code2,
+    colorClass: 'text-emerald-500',
+    badgeBg: 'bg-emerald-500/10 dark:bg-emerald-500/20',
+    borderHover: 'hover:border-emerald-400 dark:hover:border-emerald-600',
+  },
+  learning: {
+    key: 'learning',
+    label: 'Learning',
+    icon: Brain,
+    colorClass: 'text-indigo-500',
+    badgeBg: 'bg-indigo-500/10 dark:bg-indigo-500/20',
+    borderHover: 'hover:border-indigo-400 dark:hover:border-indigo-600',
+  },
+  reading: {
+    key: 'reading',
+    label: 'Reading',
+    icon: BookOpen,
+    colorClass: 'text-amber-500',
+    badgeBg: 'bg-amber-500/10 dark:bg-amber-500/20',
+    borderHover: 'hover:border-amber-400 dark:hover:border-amber-600',
+  },
+  personal: {
+    key: 'personal',
+    label: 'Personal',
+    icon: Coffee,
+    colorClass: 'text-rose-500',
+    badgeBg: 'bg-rose-500/10 dark:bg-rose-500/20',
+    borderHover: 'hover:border-rose-400 dark:hover:border-rose-600',
+  },
+  exercise: {
+    key: 'exercise',
+    label: 'Exercise',
+    icon: Dumbbell,
+    colorClass: 'text-orange-500',
+    badgeBg: 'bg-orange-500/10 dark:bg-orange-500/20',
+    borderHover: 'hover:border-orange-400 dark:hover:border-orange-600',
+  },
+  meeting: {
+    key: 'meeting',
+    label: 'Meeting',
+    icon: Users,
+    colorClass: 'text-cyan-500',
+    badgeBg: 'bg-cyan-500/10 dark:bg-cyan-500/20',
+    borderHover: 'hover:border-cyan-400 dark:hover:border-cyan-600',
+  },
+  goal: {
+    key: 'goal',
+    label: 'Goal',
+    icon: Target,
+    colorClass: 'text-purple-500',
+    badgeBg: 'bg-purple-500/10 dark:bg-purple-500/20',
+    borderHover: 'hover:border-purple-400 dark:hover:border-purple-600',
+  },
+  achievement: {
+    key: 'achievement',
+    label: 'Achievement',
+    icon: Trophy,
+    colorClass: 'text-yellow-500',
+    badgeBg: 'bg-yellow-500/10 dark:bg-yellow-500/20',
+    borderHover: 'hover:border-yellow-400 dark:hover:border-yellow-600',
+  },
+  custom: {
+    key: 'custom',
+    label: 'Custom',
+    icon: Clock,
+    colorClass: 'text-neutral-500',
+    badgeBg: 'bg-neutral-500/10 dark:bg-neutral-500/20',
+    borderHover: 'hover:border-neutral-400 dark:hover:border-neutral-600',
+  },
+};
 
 export const DashboardPage: React.FC = () => {
   const {
@@ -47,29 +143,93 @@ export const DashboardPage: React.FC = () => {
     recentIdeas: true,
   });
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Dynamic local date calculation to eliminate timezone offset discrepancies
+  const getLocalDateString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getLocalDateString();
+  const utcTodayStr = new Date().toISOString().split('T')[0];
+
   const todayActivities = activities
-    .filter((a) => a.date === todayStr)
+    .filter((a) => a.date === todayStr || a.date === utcTodayStr)
     .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
 
-  // Calculate today's stats by type
-  const readingMins = todayActivities
-    .filter((a) => a.type === 'reading')
-    .reduce((acc, a) => acc + a.durationMinutes, 0);
+  const totalTodayMins = todayActivities.reduce(
+    (acc, a) => acc + (Number(a.durationMinutes) || 0),
+    0
+  );
 
-  const learningMins = todayActivities
-    .filter((a) => a.type === 'learning')
-    .reduce((acc, a) => acc + a.durationMinutes, 0);
+  // Group activities by normalized category type
+  const activitiesByType = useMemo(() => {
+    const map: Record<string, { mins: number; items: typeof todayActivities }> = {};
+    todayActivities.forEach((a) => {
+      const rawType = (a.type || 'custom').toLowerCase();
+      const typeKey = rawType.includes('build') || rawType.includes('cod') ? 'building' : rawType;
+      if (!map[typeKey]) {
+        map[typeKey] = { mins: 0, items: [] };
+      }
+      map[typeKey].mins += Number(a.durationMinutes) || 0;
+      map[typeKey].items.push(a);
+    });
+    return map;
+  }, [todayActivities]);
 
-  const workMins = todayActivities
-    .filter((a) => a.type === 'work')
-    .reduce((acc, a) => acc + a.durationMinutes, 0);
+  // Compute dynamic category overview cards:
+  // 1. Categories that have active time logged today (ordered by most time spent)
+  // 2. Filled with key routine categories (Work, Building, Learning, Reading, Personal, Exercise)
+  const categoryCards = useMemo(() => {
+    const activeCategories = Object.keys(activitiesByType).sort(
+      (a, b) => activitiesByType[b].mins - activitiesByType[a].mins
+    );
 
-  const buildingMins = todayActivities
-    .filter((a) => a.type === 'building')
-    .reduce((acc, a) => acc + a.durationMinutes, 0);
+    const fallbackCoreOrder = ['work', 'building', 'learning', 'reading', 'personal', 'exercise'];
+    const selectedTypes: string[] = [...activeCategories];
 
-  const totalTodayMins = todayActivities.reduce((acc, a) => acc + a.durationMinutes, 0);
+    for (const core of fallbackCoreOrder) {
+      if (!selectedTypes.includes(core) && selectedTypes.length < 4) {
+        selectedTypes.push(core);
+      }
+    }
+
+    return selectedTypes.slice(0, 4).map((typeKey) => {
+      const def = CATEGORY_DEFINITIONS[typeKey] || {
+        key: typeKey,
+        label: typeKey.charAt(0).toUpperCase() + typeKey.slice(1),
+        icon: Clock,
+        colorClass: 'text-neutral-500',
+        badgeBg: 'bg-neutral-500/10',
+        borderHover: 'hover:border-neutral-400 dark:hover:border-neutral-600',
+      };
+
+      const group = activitiesByType[typeKey];
+      const mins = group ? group.mins : 0;
+      const count = group ? group.items.length : 0;
+
+      let subtitle = 'Not logged today';
+      if (count === 1) {
+        subtitle = group.items[0].title || '1 session logged';
+      } else if (count > 1) {
+        subtitle = `${group.items[0].title} (+${count - 1} more)`;
+      }
+
+      return {
+        key: typeKey,
+        label: def.label,
+        icon: def.icon,
+        colorClass: def.colorClass,
+        badgeBg: def.badgeBg,
+        borderHover: def.borderHover,
+        mins,
+        count,
+        subtitle,
+      };
+    });
+  }, [activitiesByType]);
 
   const activeProjects = projects
     .filter((p) => p.status === 'in_progress')
@@ -292,64 +452,55 @@ export const DashboardPage: React.FC = () => {
               Today&rsquo;s Overview
             </h2>
             <span className="text-xs font-mono text-neutral-400">
-              {formatDuration(totalTodayMins)} tracked · {todayActivities.length} activities
+              {formatDuration(totalTodayMins)} tracked · {todayActivities.length} {todayActivities.length === 1 ? 'activity' : 'activities'}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
-              <div className="flex items-center justify-between text-neutral-500 mb-2">
-                <span className="text-xs font-medium">Reading</span>
-                <BookOpen className="w-4 h-4 text-amber-500" />
-              </div>
-              <div className="text-xl font-bold font-mono tabular-nums text-neutral-900 dark:text-neutral-100">
-                {readingMins > 0 ? formatDuration(readingMins) : '0m'}
-              </div>
-              <div className="text-[10px] text-neutral-400 mt-1">Atomic Habits</div>
-            </div>
+            {categoryCards.map((card) => {
+              const IconComp = card.icon;
+              return (
+                <button
+                  key={card.key}
+                  type="button"
+                  onClick={() => openActivityModal({ type: card.key as any, date: todayStr })}
+                  title={`Click to log ${card.label} activity`}
+                  className={`p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs text-left transition-all cursor-pointer group ${card.borderHover} hover:shadow-md`}
+                >
+                  <div className="flex items-center justify-between text-neutral-500 mb-2">
+                    <span className="text-xs font-medium group-hover:text-neutral-900 dark:group-hover:text-white transition-colors">
+                      {card.label}
+                    </span>
+                    <div className={`p-1 rounded-md ${card.badgeBg}`}>
+                      <IconComp className={`w-3.5 h-3.5 ${card.colorClass}`} />
+                    </div>
+                  </div>
+                  <div className="text-xl font-bold font-mono tabular-nums text-neutral-900 dark:text-neutral-100">
+                    {card.mins > 0 ? formatDuration(card.mins) : '0m'}
+                  </div>
+                  <div className="text-[10px] text-neutral-400 mt-1 truncate" title={card.subtitle}>
+                    {card.subtitle}
+                  </div>
+                </button>
+              );
+            })}
 
-            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
-              <div className="flex items-center justify-between text-neutral-500 mb-2">
-                <span className="text-xs font-medium">Learning</span>
-                <Brain className="w-4 h-4 text-indigo-500" />
-              </div>
-              <div className="text-xl font-bold font-mono tabular-nums text-neutral-900 dark:text-neutral-100">
-                {learningMins > 0 ? formatDuration(learningMins) : '0m'}
-              </div>
-              <div className="text-[10px] text-neutral-400 mt-1">Firebase Auth</div>
-            </div>
-
-            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
-              <div className="flex items-center justify-between text-neutral-500 mb-2">
-                <span className="text-xs font-medium">Work</span>
-                <Briefcase className="w-4 h-4 text-blue-500" />
-              </div>
-              <div className="text-xl font-bold font-mono tabular-nums text-neutral-900 dark:text-neutral-100">
-                {workMins > 0 ? formatDuration(workMins) : '0m'}
-              </div>
-              <div className="text-[10px] text-neutral-400 mt-1">Client Website</div>
-            </div>
-
-            <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
-              <div className="flex items-center justify-between text-neutral-500 mb-2">
-                <span className="text-xs font-medium">Building</span>
-                <Code2 className="w-4 h-4 text-emerald-500" />
-              </div>
-              <div className="text-xl font-bold font-mono tabular-nums text-neutral-900 dark:text-neutral-100">
-                {buildingMins > 0 ? formatDuration(buildingMins) : '0m'}
-              </div>
-              <div className="text-[10px] text-neutral-400 mt-1">Dashboard UI</div>
-            </div>
-
-            <div className="col-span-2 sm:col-span-1 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs">
+            {/* 5th Summary Card: Activities */}
+            <div className="col-span-2 sm:col-span-1 p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-neutral-500 mb-2">
                 <span className="text-xs font-medium">Activities</span>
-                <Clock className="w-4 h-4 text-neutral-400" />
+                <div className="p-1 rounded-md bg-neutral-100 dark:bg-neutral-800">
+                  <Clock className="w-3.5 h-3.5 text-neutral-400" />
+                </div>
               </div>
               <div className="text-xl font-bold font-mono tabular-nums text-neutral-900 dark:text-neutral-100">
                 {todayActivities.length}
               </div>
-              <div className="text-[10px] text-neutral-400 mt-1">Logged today</div>
+              <div className="text-[10px] text-neutral-400 mt-1 truncate">
+                {todayActivities.length === 0
+                  ? 'No entries today'
+                  : `${todayActivities.length} logged today · ${formatDuration(totalTodayMins)}`}
+              </div>
             </div>
           </div>
         </section>
