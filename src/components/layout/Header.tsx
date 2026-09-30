@@ -109,6 +109,10 @@ export const Header: React.FC = () => {
         return 'Settings';
       case 'export':
         return 'Export Data';
+      case 'team-members':
+        return 'Team Members';
+      case 'student-mailer':
+        return 'Student Sheet Mailer';
       default:
         return 'My Journey';
     }

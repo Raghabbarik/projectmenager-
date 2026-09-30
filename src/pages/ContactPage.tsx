@@ -10,6 +10,7 @@ import {
   Cloud,
   Users,
 } from 'lucide-react';
+import { isSmtpConfigured, getSmtpConfig, sendSmtpEmail } from '../services/emailService';
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 26 },
@@ -55,6 +56,15 @@ export const ContactPage: React.FC = () => {
     if (!name.trim() || !email.trim() || !message.trim()) {
       showToast('Please fill in all required fields.', 'warning');
       return;
+    }
+
+    if (isSmtpConfigured()) {
+      const cfg = getSmtpConfig();
+      sendSmtpEmail({
+        to: cfg.fromEmail,
+        subject: `[Contact Inquiry] ${subject.trim() || 'New Inquiry from ' + name}`,
+        text: `Name: ${name}\nEmail: ${email}\nRole: ${role}\nSubject: ${subject}\n\nMessage:\n${message}\n\n---\nSent via My Journey Platform Contact Form`,
+      }).catch((err) => console.error('Contact email dispatch error:', err));
     }
 
     setIsSubmitted(true);

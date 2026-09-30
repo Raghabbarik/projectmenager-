@@ -44,34 +44,95 @@ export const DailyPage: React.FC = () => {
     navigateTo,
   } = useJourney();
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  // Timezone-safe local date utilities
+  const getLocalDateString = (d: Date = new Date()): string => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const normalizeDate = (dateVal: string | undefined | null): string => {
+    if (!dateVal) return '';
+    return dateVal.slice(0, 10);
+  };
+
+  const getTomorrowString = (): string => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return getLocalDateString(d);
+  };
+
+  const getYesterdayString = (): string => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return getLocalDateString(d);
+  };
+
+  const todayStr = getLocalDateString(new Date());
+  const tomorrowStr = getTomorrowString();
+  const yesterdayStr = getYesterdayString();
+
   const [currentDate, setCurrentDate] = useState(todayStr);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('all');
   const [selectedPriorityFilter, setSelectedPriorityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [sectionView, setSectionView] = useState<'all' | 'tasks' | 'work'>('all');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [activityScope, setActivityScope] = useState<'day' | 'tomorrow' | 'upcoming' | 'all'>('day');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<PriorityLevel>('high');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [targetProjectId, setTargetProjectId] = useState<string>('personal');
 
-  // Change date by offset in days
+  // Change date by offset in days (timezone-safe local arithmetic)
   const adjustDate = (days: number) => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + days);
-    setCurrentDate(d.toISOString().split('T')[0]);
+    const parts = currentDate.split('-').map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2] + days);
+    setCurrentDate(getLocalDateString(d));
   };
 
   const setToday = () => {
     setCurrentDate(todayStr);
+    setActivityScope('day');
   };
 
-  // Activities for this date
+  // Activities for this specific selected date
   const dayActivities = activities
-    .filter((a) => a.date === currentDate)
+    .filter((a) => normalizeDate(a.date) === currentDate)
     .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
 
-  const filteredActivities = dayActivities.filter((a) => {
+  // Activities for tomorrow
+  const tomorrowActivities = activities
+    .filter((a) => normalizeDate(a.date) === tomorrowStr)
+    .sort((a, b) => (a.startTime || '00:00').localeCompare(b.startTime || '00:00'));
+
+  // Upcoming activities (future dates beyond today)
+  const upcomingActivities = activities
+    .filter((a) => normalizeDate(a.date) > todayStr)
+    .sort(
+      (a, b) =>
+        normalizeDate(a.date).localeCompare(normalizeDate(b.date)) ||
+        (a.startTime || '00:00').localeCompare(b.startTime || '00:00')
+    );
+
+  // All activities sorted chronologically (newest first)
+  const allSortedActivities = [...activities].sort(
+    (a, b) =>
+      normalizeDate(b.date).localeCompare(normalizeDate(a.date)) ||
+      (b.startTime || '00:00').localeCompare(a.startTime || '00:00')
+  );
+
+  // Scoped activities to display based on selected scope tab
+  const scopeActivities =
+    activityScope === 'tomorrow'
+      ? tomorrowActivities
+      : activityScope === 'upcoming'
+      ? upcomingActivities
+      : activityScope === 'all'
+      ? allSortedActivities
+      : dayActivities;
+
+  const filteredActivities = scopeActivities.filter((a) => {
     if (selectedTypeFilter === 'all') return true;
     return a.type === selectedTypeFilter;
   });
@@ -81,9 +142,9 @@ export const DailyPage: React.FC = () => {
 
   // Tasks for this date
   const dayTasks = tasks.filter((t) => {
-    if (t.dueDate === currentDate) return true;
-    if (t.completedAt && t.completedAt.slice(0, 10) === currentDate) return true;
-    if (!t.dueDate && t.createdAt && t.createdAt.slice(0, 10) === currentDate) return true;
+    if (normalizeDate(t.dueDate) === currentDate) return true;
+    if (t.completedAt && normalizeDate(t.completedAt) === currentDate) return true;
+    if (!t.dueDate && t.createdAt && normalizeDate(t.createdAt) === currentDate) return true;
     return false;
   });
 
@@ -106,12 +167,6 @@ export const DailyPage: React.FC = () => {
   const taskProgressPct =
     dayTasks.length > 0 ? Math.round((completedDayTasks.length / dayTasks.length) * 100) : 0;
 
-  // Genuine overall daily progress:
-  // - If marked complete: 100%
-  // - If both tasks & activities exist: 50% task completion + 50% focus time
-  // - If only tasks exist: pure task completion %
-  // - If only activities exist: pure focus time %
-  // - If neither exist: exactly 0% (never fake 40%)
   let overallDayProgress = 0;
   if (isComplete) {
     overallDayProgress = 100;
@@ -143,11 +198,10 @@ export const DailyPage: React.FC = () => {
   // Dynamic 9-day calendar window centered around currentDate
   const calendarDays = React.useMemo(() => {
     const days: string[] = [];
-    const base = new Date(currentDate);
+    const parts = currentDate.split('-').map(Number);
     for (let i = -4; i <= 4; i++) {
-      const d = new Date(base);
-      d.setDate(d.getDate() + i);
-      days.push(d.toISOString().split('T')[0]);
+      const d = new Date(parts[0], parts[1] - 1, parts[2] + i);
+      days.push(getLocalDateString(d));
     }
     return days;
   }, [currentDate]);
@@ -253,35 +307,99 @@ export const DailyPage: React.FC = () => {
 
       {/* Date Navigator Bar */}
       <div className="flex items-center justify-between p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => adjustDate(-1)}
-            className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
-            title="Previous Day"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-800/80 p-1 rounded-xl border border-neutral-200/60 dark:border-neutral-700/60">
+            <button
+              onClick={() => adjustDate(-1)}
+              className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-white dark:hover:bg-neutral-700 transition-colors cursor-pointer"
+              title="Previous Day"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
 
-          <div className="text-xs sm:text-sm font-semibold text-neutral-900 dark:text-neutral-100 font-mono px-2">
-            {formatDateDisplay(currentDate)}
+            <div className="text-xs sm:text-sm font-semibold text-neutral-900 dark:text-neutral-100 font-mono px-2">
+              {formatDateDisplay(currentDate)}
+            </div>
+
+            <button
+              onClick={() => adjustDate(1)}
+              className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-white dark:hover:bg-neutral-700 transition-colors cursor-pointer"
+              title="Next Day"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
 
-          <button
-            onClick={() => adjustDate(1)}
-            className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
-            title="Next Day"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          {/* Quick Date Presets */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => {
+                setCurrentDate(yesterdayStr);
+                setActivityScope('day');
+              }}
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
+                currentDate === yesterdayStr
+                  ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 border-neutral-900 dark:border-neutral-100 shadow-xs font-semibold'
+                  : 'bg-neutral-50 dark:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+              }`}
+            >
+              Yesterday
+            </button>
 
-          {currentDate !== todayStr && (
             <button
               onClick={setToday}
-              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold ml-2 cursor-pointer"
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
+                currentDate === todayStr
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs font-semibold'
+                  : 'bg-neutral-50 dark:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+              }`}
             >
-              Today
+              <span className={`w-1.5 h-1.5 rounded-full ${currentDate === todayStr ? 'bg-white' : 'bg-emerald-500'}`} />
+              <span>Today</span>
             </button>
-          )}
+
+            <button
+              onClick={() => {
+                setCurrentDate(tomorrowStr);
+                setActivityScope('day');
+              }}
+              className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 ${
+                currentDate === tomorrowStr
+                  ? 'bg-purple-600 text-white border-purple-600 shadow-xs font-semibold'
+                  : 'bg-neutral-50 dark:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+              }`}
+              title="View Tomorrow's Schedule"
+            >
+              <span>Tomorrow</span>
+              {tomorrowActivities.length > 0 && (
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
+                    currentDate === tomorrowStr
+                      ? 'bg-white text-purple-700'
+                      : 'bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300'
+                  }`}
+                >
+                  {tomorrowActivities.length}
+                </span>
+              )}
+            </button>
+
+            {/* Direct date picker */}
+            <div className="relative flex items-center">
+              <input
+                type="date"
+                value={currentDate}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setCurrentDate(e.target.value);
+                    setActivityScope('day');
+                  }
+                }}
+                className="px-2 py-1 text-xs font-mono rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                title="Select any date"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 text-xs font-mono text-neutral-500 dark:text-neutral-400">
@@ -298,6 +416,29 @@ export const DailyPage: React.FC = () => {
           </span>
         </div>
       </div>
+
+      {/* Tomorrow Activities Notification Alert Banner */}
+      {currentDate === todayStr && tomorrowActivities.length > 0 && (
+        <div className="flex items-center justify-between p-3 sm:p-4 rounded-xl border border-purple-200 dark:border-purple-900/50 bg-purple-50/70 dark:bg-purple-950/20 text-xs gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <span className="text-purple-900 dark:text-purple-200 truncate sm:whitespace-normal">
+              You have <strong>{tomorrowActivities.length} Particular Work & Activity Session(s)</strong> scheduled for <strong>Tomorrow ({formatDateDisplay(tomorrowStr)})</strong>.
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              setCurrentDate(tomorrowStr);
+              setActivityScope('day');
+            }}
+            className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors cursor-pointer shrink-0 shadow-xs"
+          >
+            View Tomorrow's Sessions →
+          </button>
+        </div>
+      )}
 
       {/* 1. Daily Journey Completion Status & Action Card */}
       <div className="p-5 sm:p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs space-y-4">
@@ -415,18 +556,25 @@ export const DailyPage: React.FC = () => {
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-9 gap-2">
             {calendarDays.map((d) => {
-              const count = activities.filter((a) => a.date === d).length;
+              const count = activities.filter((a) => normalizeDate(a.date) === d).length;
               const isSelected = d === currentDate;
               const dayDone = isDayCompleted(d);
-              const dateObj = new Date(d + 'T00:00:00');
+              const parts = d.split('-').map(Number);
+              const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
               const miniLabel = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              const isTomorrowBadge = d === tomorrowStr;
               return (
                 <button
                   key={d}
-                  onClick={() => setCurrentDate(d)}
-                  className={`p-3 rounded-lg border text-center transition-all cursor-pointer ${
+                  onClick={() => {
+                    setCurrentDate(d);
+                    setActivityScope('day');
+                  }}
+                  className={`p-3 rounded-lg border text-center transition-all cursor-pointer relative ${
                     isSelected
                       ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/30'
+                      : isTomorrowBadge && count > 0
+                      ? 'border-purple-300 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-950/20'
                       : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800/40'
                   }`}
                 >
@@ -442,7 +590,7 @@ export const DailyPage: React.FC = () => {
                       <span
                         key={i}
                         className={`w-1.5 h-1.5 rounded-full ${
-                          dayDone ? 'bg-emerald-500' : 'bg-indigo-500'
+                          dayDone ? 'bg-emerald-500' : isTomorrowBadge ? 'bg-purple-500' : 'bg-indigo-500'
                         }`}
                       />
                     ))}
@@ -507,7 +655,7 @@ export const DailyPage: React.FC = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                  Particular Tasks for Today
+                  Particular Tasks for {currentDate === todayStr ? 'Today' : currentDate === tomorrowStr ? 'Tomorrow' : formatDateDisplay(currentDate)}
                 </h3>
                 <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-semibold">
                   {completedDayTasks.length} of {dayTasks.length} Completed
@@ -831,19 +979,78 @@ export const DailyPage: React.FC = () => {
                   Particular Work & Activity Sessions
                 </h3>
                 <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold">
-                  {completedActivitiesCount} of {dayActivities.length} Completed
+                  {activityScope === 'day'
+                    ? `${completedActivitiesCount} of ${dayActivities.length} Completed`
+                    : `${filteredActivities.filter((a) => !!a.completed).length} of ${filteredActivities.length} Completed`}
                 </span>
               </div>
               <p className="text-xs text-neutral-500 mt-0.5">
-                Every work session has a <strong>Complete</strong> button to mark that specific effort done
+                {activityScope === 'day'
+                  ? `Showing sessions for ${currentDate === todayStr ? 'Today' : currentDate === tomorrowStr ? 'Tomorrow' : formatDateDisplay(currentDate)}`
+                  : activityScope === 'tomorrow'
+                  ? `Showing sessions scheduled for Tomorrow (${formatDateDisplay(tomorrowStr)})`
+                  : activityScope === 'upcoming'
+                  ? `Showing upcoming sessions beyond today (${upcomingActivities.length} total)`
+                  : `Showing all recorded sessions across all dates (${activities.length} total)`}
               </p>
             </div>
 
             <button
-              onClick={() => openActivityModal({ date: currentDate })}
+              onClick={() => openActivityModal({ date: activityScope === 'tomorrow' ? tomorrowStr : currentDate })}
               className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer self-start sm:self-auto"
             >
               + Record Work Session
+            </button>
+          </div>
+
+          {/* Scope Switcher Tabs */}
+          <div className="flex items-center gap-2 p-1 bg-neutral-100 dark:bg-neutral-800/80 rounded-xl border border-neutral-200/60 dark:border-neutral-700/60 overflow-x-auto scrollbar-none">
+            <button
+              onClick={() => setActivityScope('day')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                activityScope === 'day'
+                  ? 'bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white shadow-xs font-semibold'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <CalendarIcon className="w-3.5 h-3.5" />
+              <span>Selected Day ({dayActivities.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActivityScope('tomorrow')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                activityScope === 'tomorrow'
+                  ? 'bg-purple-600 text-white shadow-xs font-semibold'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-purple-600 dark:hover:text-purple-300'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Tomorrow ({tomorrowActivities.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActivityScope('upcoming')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                activityScope === 'upcoming'
+                  ? 'bg-indigo-600 text-white shadow-xs font-semibold'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-300'
+              }`}
+            >
+              <ArrowRight className="w-3.5 h-3.5" />
+              <span>Upcoming ({upcomingActivities.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActivityScope('all')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                activityScope === 'all'
+                  ? 'bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 shadow-xs font-semibold'
+                  : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>All Recorded ({activities.length})</span>
             </button>
           </div>
 
@@ -871,14 +1078,40 @@ export const DailyPage: React.FC = () => {
           <div className="space-y-3">
             {filteredActivities.length === 0 ? (
               <EmptyState
-                title="Nothing recorded for this day"
-                description="How did you spend your time? Track your reading, coding, learning, or reflection."
-                actionLabel="Record Work Session"
-                onAction={() => openActivityModal({ date: currentDate })}
+                title={
+                  activityScope === 'tomorrow'
+                    ? 'No work sessions scheduled for tomorrow'
+                    : activityScope === 'upcoming'
+                    ? 'No upcoming work sessions scheduled'
+                    : activityScope === 'all'
+                    ? 'No work sessions recorded yet'
+                    : 'Nothing recorded for this day'
+                }
+                description={
+                  activityScope === 'tomorrow'
+                    ? 'Plan ahead by recording your planned coding, reading, or learning for tomorrow.'
+                    : activityScope === 'upcoming'
+                    ? 'Schedule upcoming work or learning sessions in advance.'
+                    : 'How did you spend your time? Track your reading, coding, learning, or reflection.'
+                }
+                actionLabel={
+                  activityScope === 'tomorrow'
+                    ? '+ Schedule Work Session for Tomorrow'
+                    : '+ Record Work Session'
+                }
+                onAction={() =>
+                  openActivityModal({
+                    date: activityScope === 'tomorrow' ? tomorrowStr : currentDate,
+                  })
+                }
               />
             ) : (
               filteredActivities.map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} />
+                <ActivityCard
+                  key={activity.id}
+                  activity={activity}
+                  showDate={activityScope !== 'day' || activity.date !== currentDate}
+                />
               ))
             )}
           </div>

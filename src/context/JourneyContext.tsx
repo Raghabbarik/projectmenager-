@@ -40,7 +40,7 @@ import {
 import { supabaseService } from '../services/supabaseService';
 import { supabase } from '../lib/supabase';
 import { DEFAULT_PUBLIC_CONTENT, PublicSiteContent } from '../data/defaultPublicContent';
-import { deleteFileBlob } from '../services/fileStorageService';
+import { deleteFileBlob, getAllStoredFileRecords } from '../services/fileStorageService';
 import { redisService } from '../services/redisService';
 
 export interface ToastMessage {
@@ -83,6 +83,7 @@ interface JourneyContextType {
   accounts: AccountTracker[];
   notes: Note[];
   files: FileAttachment[];
+  deletedFileIds: string[];
   notifications: AppNotification[];
 
   // Modals & UI Controls
@@ -282,7 +283,6 @@ const cleanLegacyMockData = () => {
         'clients',
         'accounts',
         'notes',
-        'files',
         'messages',
         'notifications',
         'completedDays',
@@ -306,8 +306,11 @@ cleanLegacyMockData();
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {
-    const item = localStorage.getItem(`my_journey_${key}`);
-    return item ? JSON.parse(item) : defaultValue;
+    const prefixed = localStorage.getItem(`my_journey_${key}`);
+    if (prefixed) return JSON.parse(prefixed);
+    const unPrefixed = localStorage.getItem(key);
+    if (unPrefixed) return JSON.parse(unPrefixed);
+    return defaultValue;
   } catch (e) {
     console.error(`Failed to load ${key} from localStorage`, e);
     return defaultValue;
@@ -441,7 +444,33 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [clients, setClients] = useState<Client[]>(() => loadFromStorage('clients', []));
   const [accounts, setAccounts] = useState<AccountTracker[]>(() => loadFromStorage('accounts', []));
   const [notes, setNotes] = useState<Note[]>(() => loadFromStorage('notes', []));
-  const [files, setFiles] = useState<FileAttachment[]>(() => loadFromStorage('files', []));
+  const [files, setFiles] = useState<FileAttachment[]>(() => {
+    const saved = loadFromStorage<FileAttachment[]>('files', []);
+    const deletedFileIds = loadFromStorage<string[]>('deleted_file_ids', []);
+    const deletedSet = new Set(deletedFileIds);
+    const existingMap = new Map<string, FileAttachment>();
+
+    // 1. Ensure initial/previous files are always present by default unless explicitly deleted
+    INITIAL_FILES.forEach((f) => {
+      if (!deletedSet.has(f.id)) {
+        existingMap.set(f.id, f);
+      }
+    });
+
+    // 2. Overlay any user uploaded or saved files
+    if (Array.isArray(saved) && saved.length > 0) {
+      saved.forEach((f) => {
+        if (!deletedSet.has(f.id)) {
+          existingMap.set(f.id, f);
+        }
+      });
+    }
+
+    return Array.from(existingMap.values());
+  });
+  const [deletedFileIds, setDeletedFileIds] = useState<string[]>(() =>
+    loadFromStorage<string[]>('deleted_file_ids', [])
+  );
   const [notifications, setNotifications] = useState<AppNotification[]>(() => loadFromStorage('notifications', []));
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() =>
     loadFromStorage('teamMembers', [
@@ -571,6 +600,26 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIsSyncing(false);
     }
   };
+
+  // Resilient File Recovery: Reconcile files stored in IndexedDB on boot
+  useEffect(() => {
+    getAllStoredFileRecords()
+      .then((idbFiles) => {
+        if (idbFiles && idbFiles.length > 0) {
+          setFiles((prev) => {
+            const existingIds = new Set(prev.map((f) => f.id));
+            const missing = idbFiles.filter((f) => !existingIds.has(f.id));
+            if (missing.length > 0) {
+              const combined = [...prev, ...missing];
+              saveToStorage('files', combined);
+              return combined;
+            }
+            return prev;
+          });
+        }
+      })
+      .catch((err) => console.warn('Could not restore files from IndexedDB:', err));
+  }, []);
 
   // One-time admin Supabase auth setup
   // Ensures the owner admin account (rraghabbarik@gmail.com) exists in Supabase Auth on first load.
@@ -1357,8 +1406,33 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteFile = (id: string) => {
+    // 1. Remove from files state
     setFiles((prev) => prev.filter((f) => f.id !== id));
+
+    // 2. Track in deletedFileIds state & storage
+    setDeletedFileIds((prev) => {
+      if (prev.includes(id)) return prev;
+      const updated = [...prev, id];
+      saveToStorage('deleted_file_ids', updated);
+      return updated;
+    });
+
+    // 3. Remove from any project planFiles
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.planFiles && p.planFiles.some((pf) => pf.id === id)) {
+          return {
+            ...p,
+            planFiles: p.planFiles.filter((pf) => pf.id !== id),
+          };
+        }
+        return p;
+      })
+    );
+
+    // 4. Remove from client IndexedDB binary store
     deleteFileBlob(id);
+
     showToast('File deleted', 'info');
   };
 
@@ -2142,6 +2216,7 @@ export const JourneyProvider: React.FC<{ children: React.ReactNode }> = ({ child
         accounts,
         notes,
         files,
+        deletedFileIds,
         notifications,
 
         commandPaletteOpen,

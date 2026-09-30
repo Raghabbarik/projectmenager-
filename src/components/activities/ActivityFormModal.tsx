@@ -17,7 +17,23 @@ export const ActivityFormModal: React.FC = () => {
     showToast,
   } = useJourney();
 
-  const getTodayDate = () => new Date().toISOString().split('T')[0];
+  const getTodayDate = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getTomorrowDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<ActivityType>('work');
@@ -199,12 +215,16 @@ export const ActivityFormModal: React.FC = () => {
       notes: notes.trim() || undefined,
     };
 
+    const isTomorrow = date === getTomorrowDate();
+    const isToday = date === getTodayDate();
+    const dateLabel = isToday ? 'Today' : isTomorrow ? 'Tomorrow' : date;
+
     if (activityModal.editId) {
       updateActivity(activityModal.editId, payload);
-      showToast('Activity updated successfully', 'success');
+      showToast(`Activity updated for ${dateLabel}`, 'success');
     } else {
       addActivity(payload);
-      showToast('Activity and time logged successfully', 'success');
+      showToast(`Work session logged for ${dateLabel}!`, 'success');
     }
 
     closeActivityModal();
@@ -611,14 +631,40 @@ export const ActivityFormModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                Date
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-neutral-700 dark:text-neutral-300">
+                  Date
+                </label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setDate(getTodayDate())}
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition ${
+                      date === getTodayDate()
+                        ? 'bg-indigo-600 text-white font-bold'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200'
+                    }`}
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDate(getTomorrowDate())}
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition ${
+                      date === getTomorrowDate()
+                        ? 'bg-blue-600 text-white font-bold'
+                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200'
+                    }`}
+                  >
+                    Tomorrow
+                  </button>
+                </div>
+              </div>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+                className="w-full px-3 py-2 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono cursor-pointer"
               />
             </div>
           </div>

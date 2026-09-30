@@ -17,6 +17,7 @@ import {
   PlusCircle,
   X,
   ArrowRight,
+  GraduationCap,
 } from 'lucide-react';
 import { ViewRoute } from '../../types';
 
@@ -56,6 +57,7 @@ export const CommandPalette: React.FC = () => {
     { label: 'Accounts & Services', route: 'accounts', icon: KeyRound, category: 'Navigation' },
     { label: 'Notes & Knowledge', route: 'notes', icon: FileText, category: 'Navigation' },
     { label: 'Files & Assets', route: 'files', icon: Paperclip, category: 'Navigation' },
+    { label: 'Student Sheet Mailer', route: 'student-mailer', icon: GraduationCap, category: 'Navigation' },
     { label: 'AI Assistant', route: 'ai-assistant', icon: Sparkles, category: 'Navigation' },
     { label: 'Settings & Privacy', route: 'settings', icon: Settings, category: 'Navigation' },
   ];

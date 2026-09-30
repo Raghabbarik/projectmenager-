@@ -11,6 +11,7 @@ import {
   Sparkles,
   CheckCircle2,
 } from 'lucide-react';
+import { isSmtpConfigured, sendSmtpEmail, getSmtpConfig } from '../../services/emailService';
 
 interface SendMessageModalProps {
   isOpen: boolean;
@@ -38,6 +39,10 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
   const [content, setContent] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [sendViaEmail, setSendViaEmail] = useState(true);
+
+  const smtpReady = isSmtpConfigured();
+  const smtpConfig = getSmtpConfig();
 
   useEffect(() => {
     if (isOpen) {
@@ -93,6 +98,30 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
       relatedProjectId: selectedProjectId || undefined,
       relatedClientId: selectedClientId || undefined,
     });
+
+    if (sendViaEmail && smtpReady) {
+      let recipientEmails: string[] = [];
+      if (recipientId === 'all') {
+        recipientEmails = teamMembers.map((m) => m.email).filter(Boolean);
+      } else {
+        const found = teamMembers.find(
+          (m) => m.id === recipientId || m.email.toLowerCase() === recipientId.toLowerCase()
+        );
+        if (found && found.email) {
+          recipientEmails = [found.email];
+        } else if (recipientId.includes('@')) {
+          recipientEmails = [recipientId];
+        }
+      }
+
+      if (recipientEmails.length > 0) {
+        sendSmtpEmail({
+          to: recipientEmails,
+          subject: `[Team Message] ${subject.trim()}`,
+          text: `${content.trim()}\n\n---\nSent by ${user.name} via My Journey Platform`,
+        }).catch((err) => console.error('SMTP notification error:', err));
+      }
+    }
 
     onClose();
   };
@@ -282,6 +311,30 @@ export const SendMessageModal: React.FC<SendMessageModalProps> = ({
               className="w-full px-3 py-2 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-transparent text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 leading-relaxed resize-y"
             />
           </div>
+
+          {/* Email dispatch toggle */}
+          {smtpReady ? (
+            <label className="flex items-center gap-2 p-2.5 rounded-lg border border-neutral-150 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-850/60 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={sendViaEmail}
+                onChange={(e) => setSendViaEmail(e.target.checked)}
+                className="rounded border-neutral-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <div className="text-xs">
+                <span className="font-semibold text-neutral-800 dark:text-neutral-200">
+                  Also dispatch real email notification via SMTP
+                </span>
+                <span className="text-[11px] text-neutral-500 block">
+                  Sends directly from {smtpConfig.fromEmail} to the recipient's inbox
+                </span>
+              </div>
+            </label>
+          ) : (
+            <div className="p-2 rounded-lg bg-neutral-50 dark:bg-neutral-850 border border-neutral-150 dark:border-neutral-800 text-[11px] text-neutral-500 flex items-center justify-between">
+              <span>💡 Configure SMTP in Settings to also dispatch emails to recipients.</span>
+            </div>
+          )}
 
           {/* Footer Actions */}
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-neutral-100 dark:border-neutral-800">

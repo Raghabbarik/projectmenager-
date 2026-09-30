@@ -28,6 +28,7 @@ import {
   Globe,
   User,
   Users,
+  GraduationCap,
 } from 'lucide-react';
 
 import { ViewRoute } from '../../types';
@@ -335,6 +336,40 @@ export const Sidebar: React.FC = () => {
                       </div>
                       <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200">
                         EDIT
+                      </span>
+                    </button>
+                  </nav>
+                </div>
+
+                {/* Dedicated Student Outreach & Sheet Mailer Section */}
+                <div>
+                  <div className="px-2.5 mb-1.5 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500 uppercase tracking-wider flex items-center justify-between">
+                    <span>Student Outreach</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+                      NEW
+                    </span>
+                  </div>
+                  <nav className="space-y-0.5">
+                    <button
+                      onClick={() => handleNavClick('student-mailer')}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                        currentRoute === 'student-mailer'
+                          ? 'bg-neutral-100 dark:bg-neutral-900 text-indigo-600 dark:text-indigo-400 font-semibold'
+                          : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-900/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 truncate">
+                        <GraduationCap
+                          className={`w-4 h-4 shrink-0 stroke-[1.75] ${
+                            currentRoute === 'student-mailer'
+                              ? 'text-indigo-600 dark:text-indigo-400'
+                              : 'text-neutral-400 dark:text-neutral-500'
+                          }`}
+                        />
+                        <span className="truncate">Student Sheet Mailer</span>
+                      </div>
+                      <span className="text-[10px] font-mono font-bold bg-indigo-500 text-white px-1.5 py-0.2 rounded-full">
+                        Sheets
                       </span>
                     </button>
                   </nav>

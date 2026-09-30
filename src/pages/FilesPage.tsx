@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useJourney } from '../context/JourneyContext';
 import { FileAttachment } from '../types';
-import { saveFileBlob, downloadFile } from '../services/fileStorageService';
+import { INITIAL_FILES } from '../data/mockData';
+import { saveFileBlob, downloadFile, getAllStoredFileRecords } from '../services/fileStorageService';
 import { FilePreviewModal } from '../components/files/FilePreviewModal';
 import {
   Paperclip,
@@ -21,8 +22,17 @@ import {
 import { EmptyState } from '../components/common/EmptyState';
 
 export const FilesPage: React.FC = () => {
-  const { files, projects, addFile, deleteFile, requestDelete, navigateTo, showToast } =
-    useJourney();
+  const {
+    files,
+    projects,
+    deletedFileIds,
+    addFile,
+    deleteFile,
+    removeProjectPlanFile,
+    requestDelete,
+    navigateTo,
+    showToast,
+  } = useJourney();
 
   const [search, setSearch] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
@@ -30,6 +40,60 @@ export const FilesPage: React.FC = () => {
   const [previewFile, setPreviewFile] = useState<FileAttachment | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Extract all plan files attached across all projects
+  const allProjectPlanFiles: FileAttachment[] = useMemo(() => {
+    const list: FileAttachment[] = [];
+    projects.forEach((proj) => {
+      (proj.planFiles || []).forEach((pf) => {
+        const isPdf = pf.name.toLowerCase().endsWith('.pdf');
+        const isImg = /\.(png|jpe?g|gif|webp|svg)$/i.test(pf.name);
+        list.push({
+          id: pf.id,
+          name: pf.name,
+          type: pf.type || (isPdf ? 'application/pdf' : isImg ? 'image/png' : 'application/octet-stream'),
+          size: pf.size || '1.2 MB',
+          url: pf.url,
+          fileData: pf.fileData,
+          linkedProjectId: proj.id,
+          uploadedAt: pf.addedAt ? `${pf.addedAt}T00:00:00Z` : new Date().toISOString(),
+        });
+      });
+    });
+    return list;
+  }, [projects]);
+
+  // Combined, resilient file universe:
+  // 1. Initial/previous built-in files (excluding deleted ones)
+  // 2. All project plan files & attachments (excluding deleted ones)
+  // 3. Current user-uploaded files from state and IndexedDB (excluding deleted ones)
+  const allFiles: FileAttachment[] = useMemo(() => {
+    const deletedSet = new Set(deletedFileIds || []);
+    const map = new Map<string, FileAttachment>();
+
+    // 1. Baseline initial files
+    INITIAL_FILES.forEach((f) => {
+      if (!deletedSet.has(f.id)) {
+        map.set(f.id, f);
+      }
+    });
+
+    // 2. Project plan files
+    allProjectPlanFiles.forEach((pf) => {
+      if (!deletedSet.has(pf.id) && !map.has(pf.id)) {
+        map.set(pf.id, pf);
+      }
+    });
+
+    // 3. User files in state (highest priority)
+    files.forEach((f) => {
+      if (!deletedSet.has(f.id)) {
+        map.set(f.id, f);
+      }
+    });
+
+    return Array.from(map.values());
+  }, [files, allProjectPlanFiles, deletedFileIds]);
 
   const processFiles = async (uploadedFiles: FileList | File[]) => {
     if (!uploadedFiles || uploadedFiles.length === 0) return;
@@ -45,8 +109,14 @@ export const FilesPage: React.FC = () => {
       // 1. Generate unique file ID
       const fileId = `file-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
 
-      // 2. Persist real File/PDF Blob in client IndexedDB storage
-      await saveFileBlob(fileId, f);
+      // 2. Persist real File/PDF Blob with complete metadata in client IndexedDB storage
+      await saveFileBlob(fileId, f, {
+        name: f.name,
+        type: f.type || 'application/octet-stream',
+        size: displaySize,
+        linkedProjectId: selectedProjectId || undefined,
+        uploadedAt: new Date().toISOString(),
+      });
 
       // 3. Add file metadata to JourneyContext — pass the same fileId used for IndexedDB blob
       addFile({
@@ -101,7 +171,7 @@ export const FilesPage: React.FC = () => {
     }
   };
 
-  const filteredFiles = files.filter((f) => {
+  const filteredFiles = allFiles.filter((f) => {
     if (selectedProjectId && f.linkedProjectId !== selectedProjectId) return false;
     if (search.trim() && !f.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
@@ -116,9 +186,14 @@ export const FilesPage: React.FC = () => {
             <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
               <Paperclip className="w-4 h-4" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-              Files &amp; Attachments
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                Files &amp; Attachments
+              </h1>
+              <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                {allFiles.length} files
+              </span>
+            </div>
           </div>
           <p className="text-xs text-neutral-500">
             Upload PDFs, design mockups, and documents. View PDFs directly or download anytime.
@@ -311,7 +386,12 @@ export const FilesPage: React.FC = () => {
                         title: 'Delete File?',
                         message: `Permanently remove ${file.name}?`,
                         confirmLabel: 'Delete File',
-                        onConfirm: () => deleteFile(file.id),
+                        onConfirm: () => {
+                          deleteFile(file.id);
+                          if (file.linkedProjectId) {
+                            removeProjectPlanFile(file.linkedProjectId, file.id);
+                          }
+                        },
                       });
                     }}
                     className="p-1 text-neutral-400 hover:text-rose-600 rounded transition-colors cursor-pointer"

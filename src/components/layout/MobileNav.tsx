@@ -21,6 +21,7 @@ import {
   Sun,
   Mail,
   User,
+  GraduationCap,
 } from 'lucide-react';
 import { ViewRoute } from '../../types';
 
@@ -43,6 +44,7 @@ export const MobileNav: React.FC = () => {
     { id: 'accounts', label: 'Accounts', icon: KeyRound },
     { id: 'notes', label: 'Notes', icon: FileText },
     { id: 'files', label: 'Files & Assets', icon: Paperclip },
+    { id: 'student-mailer', label: 'Student Sheet Mailer', icon: GraduationCap },
     { id: 'ai-assistant', label: 'AI Assistant', icon: Sparkles },
     { id: 'export', label: 'Export Data', icon: Download },
     { id: 'settings', label: 'Settings', icon: Settings },

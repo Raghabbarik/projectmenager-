@@ -46,6 +46,7 @@ import { SearchPage } from './pages/SearchPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AiAssistantPage } from './pages/AiAssistantPage';
 import { AdminMembersPage } from './pages/AdminMembersPage';
+import { StudentMailerPage } from './pages/StudentMailerPage';
 import {
   LoginPage,
   RegisterPage,
@@ -248,6 +249,8 @@ const AppContent: React.FC = () => {
         return <SettingsPage />;
       case 'team-members':
         return <AdminMembersPage />;
+      case 'student-mailer':
+        return <StudentMailerPage />;
       default:
         return <DashboardPage />;
     }

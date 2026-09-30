@@ -1,4 +1,5 @@
 import { FileAttachment } from '../types';
+import { getDocumentContent } from '../data/documentContents';
 
 const DB_NAME = 'my_journey_files_db';
 const STORE_NAME = 'files_store';
@@ -32,20 +33,73 @@ function getDB(): Promise<IDBDatabase> {
 }
 
 /**
- * Persists a real File or Blob into client IndexedDB storage.
+ * Persists a real File or Blob with complete metadata into client IndexedDB storage.
  */
-export async function saveFileBlob(id: string, file: File | Blob): Promise<void> {
+export async function saveFileBlob(
+  id: string,
+  file: File | Blob,
+  metadata?: { name?: string; type?: string; size?: string; linkedProjectId?: string; uploadedAt?: string }
+): Promise<void> {
   try {
     const db = await getDB();
+    const fileName = metadata?.name || (file as File).name || id;
+    const fileType = metadata?.type || file.type || 'application/octet-stream';
+    const fileSize =
+      metadata?.size ||
+      ((file as File).size
+        ? (file as File).size < 1024 * 1024
+          ? `${Math.round((file as File).size / 1024)} KB`
+          : `${((file as File).size / (1024 * 1024)).toFixed(2)} MB`
+        : 'Unknown size');
+    const uploadedAt = metadata?.uploadedAt || new Date().toISOString();
+
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
-      store.put({ id, blob: file, name: (file as File).name || id, type: file.type });
+      store.put({
+        id,
+        blob: file,
+        name: fileName,
+        type: fileType,
+        size: fileSize,
+        linkedProjectId: metadata?.linkedProjectId,
+        uploadedAt,
+      });
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
   } catch (err) {
     console.error('Failed to save file blob to IndexedDB:', err);
+  }
+}
+
+/**
+ * Retrieves all stored files from IndexedDB to ensure persistent file records.
+ */
+export async function getAllStoredFileRecords(): Promise<FileAttachment[]> {
+  try {
+    const db = await getDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.getAll();
+      request.onsuccess = () => {
+        const records = request.result || [];
+        const files: FileAttachment[] = records.map((r: any) => ({
+          id: r.id,
+          name: r.name || 'Stored File',
+          type: r.type || 'application/octet-stream',
+          size: r.size || (r.blob?.size ? `${Math.round(r.blob.size / 1024)} KB` : '1.0 MB'),
+          uploadedAt: r.uploadedAt || new Date().toISOString(),
+          linkedProjectId: r.linkedProjectId,
+        }));
+        resolve(files);
+      };
+      request.onerror = () => resolve([]);
+    });
+  } catch (err) {
+    console.error('Failed to load file records from IndexedDB:', err);
+    return [];
   }
 }
 
@@ -104,47 +158,27 @@ export async function getFileViewUrl(file: FileAttachment): Promise<string> {
     return file.url;
   }
 
-  // 3. Fallback: generate a printable sample document blob for legacy mock files
-  const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type.includes('pdf');
-  if (isPdf) {
-    // Generate minimal printable PDF blob
-    const sampleText = `%PDF-1.4
-1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
-2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
-3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj
-4 0 obj << /Length 145 >> stream
-BT
-/F1 18 Tf
-50 720 Td
-(${file.name.replace(/[^a-zA-Z0-9 -]/g, '')}) Tj
-/F1 12 Tf
-0 -30 Td
-(Uploaded: ${file.uploadedAt || new Date().toISOString()}) Tj
-0 -20 Td
-(File Size: ${file.size}) Tj
-ET
-endstream endobj
-5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
-xref
-0 6
-0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000266 00000 n 
-0000000463 00000 n 
-trailer << /Size 6 /Root 1 0 R >>
-startxref
-542
-%%EOF`;
-    const fallbackBlob = new Blob([sampleText], { type: 'application/pdf' });
-    return URL.createObjectURL(fallbackBlob);
+  // 3. Fallback: generate readable structured document blob
+  const doc = getDocumentContent(file);
+  let content = `${doc.title}\n${doc.subtitle}\nAuthor: ${doc.author} | Date: ${doc.date} | Status: ${doc.status} | Version: ${doc.version}\nCategory: ${doc.category}\n\n`;
+  for (const s of doc.sections) {
+    content += `======================================================\n${s.heading}\n======================================================\n\n`;
+    if (s.paragraphs) {
+      content += s.paragraphs.join('\n\n') + '\n\n';
+    }
+    if (s.bulletPoints && s.bulletPoints.length > 0) {
+      content += s.bulletPoints.map((b) => `• ${b}`).join('\n') + '\n\n';
+    }
+    if (s.codeBlock) {
+      content += s.codeBlock + '\n\n';
+    }
+    if (s.table) {
+      content += s.table.headers.join(' | ') + '\n';
+      content += s.table.headers.map(() => '---').join(' | ') + '\n';
+      content += s.table.rows.map((r) => r.join(' | ')).join('\n') + '\n\n';
+    }
   }
-
-  // Other types fallback to a simple text blob
-  const textBlob = new Blob([`File: ${file.name}\nSize: ${file.size}\nUploaded: ${file.uploadedAt}`], {
-    type: 'text/plain',
-  });
+  const textBlob = new Blob([content], { type: 'text/plain;charset=utf-8' });
   return URL.createObjectURL(textBlob);
 }
 

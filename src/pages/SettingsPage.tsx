@@ -25,6 +25,7 @@ import {
 import { MemberManagementModal } from '../components/members/MemberManagementModal';
 import { SendMessageModal } from '../components/messages/SendMessageModal';
 import { RedisCachePanel } from '../components/redis/RedisCachePanel';
+import { SmtpSettingsCard } from '../components/settings/SmtpSettingsCard';
 
 export const SettingsPage: React.FC = () => {
   const {
@@ -429,7 +430,10 @@ export const SettingsPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 3. Notifications Section */}
+      {/* 3. Direct Email & SMTP Platform Dispatch */}
+      <SmtpSettingsCard />
+
+      {/* 4. Notifications Section */}
       <section className="p-6 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-xs space-y-4">
         <div className="flex items-center gap-2 pb-2 border-b border-neutral-100 dark:border-neutral-800">
           <Bell className="w-4 h-4 text-neutral-500" />

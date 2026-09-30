@@ -188,9 +188,34 @@ export interface FileAttachment {
   type: string;
   size: string; // e.g. "1.2 MB"
   url?: string;
+  fileData?: string;
   linkedProjectId?: string;
   linkedActivityId?: string;
   uploadedAt: string;
+}
+
+export interface SmtpEmailConfig {
+  fromEmail: string;
+  appPassword: string;
+  fromName: string;
+  provider: 'gmail' | 'outlook' | 'yahoo' | 'custom';
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpSecure?: boolean;
+}
+
+export interface SendEmailPayload {
+  to: string | string[];
+  subject: string;
+  text?: string;
+  html?: string;
+  fromEmail?: string;
+  appPassword?: string;
+  fromName?: string;
+  provider?: 'gmail' | 'outlook' | 'yahoo' | 'custom';
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpSecure?: boolean;
 }
 
 export interface AppNotification {
@@ -277,7 +302,10 @@ export type ViewRoute =
   | 'settings'
   | 'export'
   | 'team-members'
+  | 'student-mailer'
   | 'login'
   | 'register'
   | 'forgot-password'
   | 'onboarding';
+
+export * from './studentMailer';
